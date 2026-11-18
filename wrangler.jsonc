@@ -1,0 +1,8 @@
+{
+  "name": "facemeter-bot",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-01",
+  "vars": {
+    "WEBAPP_URL": "https://ceemx-star.github.io/facemeter/facemeter-app.html"
+  }
+}
