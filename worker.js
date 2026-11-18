@@ -1,6 +1,6 @@
 const ORIGIN = "https://ceemx-star.github.io";
 const TIERS = ["Sub-3", "Sub-5", "LTN", "MTN", "HTN", "Chadlite", "Chad", "Gigachad"];
-const MODELS = ["gemini-3.1-flash-lite", "gemini-2.5-flash-lite", "gemini-flash-lite-latest", "gemini-2.5-flash"];
+const MODELS = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3-flash-preview", "gemini-3.1-flash-lite"];
 const NORMS = [
   ["sym", "Симметрия, %", "96–100"],
   ["thirds", "Макс. отклонение третей лица от 33.3%, п.п.", "0–2"],
@@ -72,41 +72,50 @@ async function evaluate(req, env) {
   }
   const ms = num(b.meshSym, 0, 100), go = num(b.gridOverall, 0, 100);
   const gt = TIERS.includes(b.gridTier) ? b.gridTier : "неизвестно";
+  const img = typeof b.image === "string" && b.image.length > 100 && b.image.length < 2500000 && /^[A-Za-z0-9+/=]+$/.test(b.image) ? b.image : null;
   const prompt =
-    "Ты независимый эксперт по оценке пропорций лица по шкале looksmax-форумов (шкала не научная). " +
-    "Другая программа уже поставила на фото сетку из 468 точек и посчитала замеры. Ты видишь только числа, лица не видишь.\n" +
+    "Ты независимый эксперт по оценке лица по шкале looksmax-форумов (шкала не научная, условная).\n" +
+    (img
+      ? "Тебе дано фото лица анфас. Программа уже поставила на нём сетку из 468 точек и посчитала замеры (они ниже). Замеры могут быть неточными из-за ракурса, света или ошибки расстановки точек: если фото и числа расходятся, доверяй тому, что видишь на фото.\n" +
+        "Сначала посмотри на фото сам: форма лица и челюсти, скулы, глаза и кантальный наклон, нос, губы, кожа, волосы, общая гармония. Потом сверь с замерами. " +
+        "Если нужно, найди в интернете актуальные критерии тиров (Sub-5, LTN, MTN, HTN, Chadlite, Chad) и опирайся на них.\n"
+      : "Ты видишь только числа, лица не видишь.\n") +
     "Замеры:\n" + lines.join("\n") +
     (ms !== null ? "\nСимметрия по сетке из 468 точек: " + ms.toFixed(1) + "%" : "") +
     "\nПравила-сетка дали " + (go !== null ? go.toFixed(1) + " из 100" : "?") + ", тир " + gt + ".\n" +
     "Тиры от низшего к высшему: " + TIERS.join(", ") + ".\n" +
-    "Оцени сам, какому тиру соответствует это сочетание замеров. Учитывай, что важнее одни замеры (кантальный наклон, челюсть, fWHR, симметрия, середина лица), а как они сочетаются между собой. Не подгоняй под тир сетки, если считаешь иначе, но если измерения выглядят нереалистично (возможна ошибка расстановки точек), скажи об этом. " +
-    "Затем дай 3-4 коротких конкретных совета именно для этих замеров: уход за кожей, сон, питание в общих чертах, стрижка или борода, как переснять фото. Без экстремальных диет, калорий и цифр веса, без операций, лекарств и «костной ломки», без оскорблений; если нужна медицина, пиши «к врачу». " +
-    'Верни только JSON: {"tier":"один из списка","why":"3-5 предложений по-русски: какие замеры решили оценку и почему","advice":["совет","совет"]}.';
-  const body = JSON.stringify({
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: { maxOutputTokens: 1500, responseMimeType: "application/json" },
-  });
+    "Оцени, какому тиру соответствует это лицо в целом, а не только числа. Оценка сетки это подсказка, а не ответ: не занижай и не завышай без причины, будь последовательным. Если измерения выглядят нереалистично, скажи об этом. " +
+    "Затем дай 3-4 коротких конкретных совета именно для этого лица: уход за кожей, сон, питание в общих чертах, стрижка или борода, как переснять фото. Без экстремальных диет, калорий и цифр веса, без операций, лекарств и «костной ломки», без оскорблений; если нужна медицина, пиши «к врачу». " +
+    'Верни только JSON: {"tier":"один из списка","why":"3-5 предложений по-русски: что на фото и какие замеры решили оценку","advice":["совет","совет"]}.';
+  const parts = [{ text: prompt }];
+  if (img) parts.push({ inline_data: { mime_type: "image/jpeg", data: img } });
+  const mk = (tools) => JSON.stringify(Object.assign(
+    { contents: [{ role: "user", parts }], generationConfig: { maxOutputTokens: 3000 } },
+    tools ? { tools: [{ google_search: {} }] } : {}
+  ));
   const list = (env.GEMINI_MODEL ? [env.GEMINI_MODEL] : []).concat(MODELS);
+  const call = (m, tools) => fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent",
+    { method: "POST", headers: { "x-goog-api-key": env.GEMINI_API_KEY, "content-type": "application/json" }, body: mk(tools) }
+  );
   let r = null;
   for (const m of list) {
     try {
-      r = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent",
-        { method: "POST", headers: { "x-goog-api-key": env.GEMINI_API_KEY, "content-type": "application/json" }, body }
-      );
+      r = await call(m, true);
+      if (!r.ok && r.status !== 404 && r.status !== 429) r = await call(m, false);
     } catch (e) { return json({ error: "upstream" }, 502); }
     if (r.status !== 404) break;
   }
   if (!r || !r.ok) return json({ error: "upstream_" + (r ? r.status : 0) }, 502);
   const d = await r.json();
-  const parts = (((d.candidates || [])[0] || {}).content || {}).parts || [];
-  const text = parts.map((x) => x.text || "").join("");
+  const outParts = (((d.candidates || [])[0] || {}).content || {}).parts || [];
+  const text = outParts.map((x) => x.text || "").join("");
   const a = text.indexOf("{"), z = text.lastIndexOf("}");
   let o;
   try { o = JSON.parse(text.slice(a, z + 1)); } catch (e) { return json({ error: "bad_answer" }, 502); }
   if (!o || !TIERS.includes(o.tier) || typeof o.why !== "string") return json({ error: "bad_answer" }, 502);
   const advice = Array.isArray(o.advice) ? o.advice.filter((x) => typeof x === "string").slice(0, 4).map((x) => x.slice(0, 300)) : [];
-  return json({ tier: o.tier, why: o.why.slice(0, 1200), advice });
+  return json({ tier: o.tier, why: o.why.slice(0, 1500), advice });
 }
 
 export default {
@@ -127,7 +136,7 @@ export default {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           chat_id: m.chat.id,
-          text: "Фейсметр: загрузите фото анфас, нейросеть поставит 468 точек и посчитает пропорции лица. Фото остаётся на вашем телефоне.",
+          text: "Фейсметр: загрузите фото анфас, нейросеть поставит 468 точек и посчитает пропорции лица. Разметка идёт на вашем телефоне; для ИИ-оценки в Google Gemini отправляется сжатая копия фото.",
           reply_markup: { inline_keyboard: [[{ text: "Открыть Фейсметр", web_app: { url: env.WEBAPP_URL } }]] },
         }),
       });
