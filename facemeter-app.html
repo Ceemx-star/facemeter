@@ -1,0 +1,726 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Фейсметр 10</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=IBM+Plex+Mono:wght@500&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: тёмная лаборатория. Три шага сверху, фото и точки слева, замеры справа, журнал внизу. */
+:root{
+  --bg:#0A0A0B; --panel:#141415; --field:#1D1B18; --ink:#F6EEDA; --muted:#A89F88; --line:#3B3322;
+  --accent:#D4AF37; --accent-ink:#1A1400; --hot:#F5D77A;
+  --good:#6FD9A0; --warn:#E8B94A; --bad:#FF6B81;
+  --font-display:"Bricolage Grotesque","Manrope",system-ui,sans-serif;
+  --font-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:26px 48px}
+.wrap{max-width:1140px;margin:0 auto}
+h1,h2{font-family:var(--font-display);margin:0}
+h1{font-size:clamp(46px,11vw,92px);line-height:.92;font-weight:800;letter-spacing:-.035em;margin-top:12px;background:linear-gradient(180deg,#F8E4A0 0%,#D4AF37 55%,#9C7A1E 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+h2{font-size:20px;line-height:1.2;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0}
+.lead{color:var(--muted);max-width:60ch;margin-top:16px}
+.eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.chip{background:var(--hot);color:#1B1300;border-radius:999px;padding:2px 10px;font-weight:500;letter-spacing:.04em}
+.steps{list-style:none;margin:24px 0 0;padding:0;display:flex;gap:8px;flex-wrap:wrap}
+.st{display:flex;align-items:center;gap:8px;padding:6px 16px 6px 6px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-weight:600;font-size:14px}
+.st b{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--field);font:500 13px var(--font-mono)}
+body[data-step="1"] .st1,body[data-step="2"] .st2,body[data-step="3"] .st3{color:var(--ink);border-color:var(--accent)}
+body[data-step="1"] .st1 b,body[data-step="2"] .st2 b,body[data-step="3"] .st3 b{background:var(--accent);color:var(--accent-ink)}
+.grid{display:grid;gap:20px;grid-template-columns:minmax(0,1fr);margin-top:24px}
+@media (min-width:900px){.grid{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);align-items:start}}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px}
+.prompt{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.prompt .txt{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.prompt .hint{color:var(--muted);font-size:14px}
+.prompt svg{width:92px;height:auto;flex:none}
+.prog{height:6px;border-radius:3px;background:var(--field);overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.tips{margin:6px 0 0;padding-left:18px;color:var(--muted);font-size:14px}
+.tips li{margin:3px 0}
+.stage{position:relative;border-radius:20px;overflow:hidden;background:var(--field);border:1px solid var(--line)}
+.stage canvas.main{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
+.stage canvas.main.locked{cursor:default;touch-action:auto}
+.loupe{position:absolute;top:10px;left:10px;width:128px;height:128px;border-radius:50%;border:3px solid var(--hot);box-shadow:0 4px 16px rgba(0,0,0,.55);pointer-events:none;overflow:hidden;background:#000;z-index:4}
+.loupe.right{left:auto;right:10px}
+.loupe canvas{display:block;width:128px;height:128px}
+.loupe span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);color:#fff;font-size:10px;line-height:1.2;padding:3px 6px 5px;text-align:center}
+.badge{position:absolute;left:12px;bottom:12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600}
+.ov{position:absolute;inset:0;z-index:5;background:rgba(7,11,20,.8);color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px}
+.ov b{display:block;font:700 20px var(--font-display);margin-bottom:8px}
+.ov small{display:block;font-size:13px;line-height:1.45;opacity:.92;max-width:36ch;margin:0 auto}
+.ov .btn{margin-top:14px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:700 14px var(--font-body);padding:12px 18px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-align:center}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.6;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:focus-visible,.btn:focus-within{outline:2px solid var(--hot);outline-offset:2px}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.hint2{color:var(--muted);font-size:13px}
+.score{display:flex;flex-direction:column;gap:16px}
+.scoreTop{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.ring{--p:50;width:116px;height:116px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--p) * 1%),var(--field) 0);position:relative;flex:none}
+.ring::before{content:"";position:absolute;inset:10px;border-radius:50%;background:var(--panel)}
+.ring span{position:relative;font:500 40px var(--font-mono);font-variant-numeric:tabular-nums}
+.tier{text-align:right;display:flex;flex-direction:column;gap:2px}
+.tier b{font-family:var(--font-display);font-size:34px;line-height:1;font-weight:800;letter-spacing:-.02em}
+.tier span{font-family:var(--font-mono);font-size:12px;color:var(--muted);max-width:26ch;margin-left:auto}
+.meter{position:relative;height:10px;border-radius:5px;background:linear-gradient(90deg,var(--bad) 0%,var(--warn) 45%,var(--good) 80%)}
+.meter i{position:absolute;top:50%;width:18px;height:18px;border-radius:50%;background:var(--ink);border:4px solid var(--bg);transform:translate(-50%,-50%)}
+.legend{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px}
+.legend b{color:var(--hot)}
+.demo-note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec + .sec{border-top:1px solid var(--line);padding-top:16px;margin-top:6px}
+.weak{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.weak li{font-size:14px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.weak b{font-weight:700}
+.weak em{font-style:normal;color:var(--muted)}
+.rows{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:12px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .nm{font-weight:700;font-size:14px}
+.row .val{font-family:var(--font-mono);font-size:16px;text-align:right;font-variant-numeric:tabular-nums}
+.row .note{grid-column:1/-1;color:var(--muted);font-size:12.5px}
+.row .meta{grid-column:1/-1;display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);font-family:var(--font-mono);flex-wrap:wrap}
+.row .tr{grid-column:1/-1;height:8px;border-radius:4px;background:var(--field);overflow:hidden;margin-top:3px}
+.row .tr i{display:block;height:100%;border-radius:4px}
+.good{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+.fill-good{background:var(--good)} .fill-warn{background:var(--warn)} .fill-bad{background:var(--bad)}
+.err{color:var(--bad);font-size:14px;font-weight:600}
+.logsec{margin-top:22px}
+.log{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:14px 18px}
+.log summary{cursor:pointer;font-weight:700}
+.log .hint2{margin:8px 0}
+.log pre{margin:0 0 10px;max-height:220px;overflow:auto;background:var(--field);border-radius:12px;padding:10px 12px;font:12px/1.5 var(--font-mono);white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+.foot{margin-top:24px;color:var(--muted);font-size:13px;max-width:80ch;display:flex;flex-direction:column;gap:6px}
+@media (prefers-reduced-motion:no-preference){.prog i,.meter i,.row .tr i{transition:width .25s ease,left .25s ease}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Лукс-анализ лица · шкала PSL <span class="chip">версия 10 · 468 точек</span></div>
+    <h1>Фейсметр</h1>
+    <p class="lead">Загрузите фото анфас: нейросеть Face Mesh сама ставит 468 точек на лице и считает пропорции: симметрию, трети, кантальный наклон, fWHR, челюсть, середину лица. Модель работает прямо в браузере, фото никуда не уходит. 21 ключевую точку для замеров можно поправить вручную. Кнопка «Расставить точки с ИИ (Claude)» остаётся запасным вариантом.</p>
+    <ol class="steps"><li class="st st1"><b>1</b>Фото</li><li class="st st2"><b>2</b>Точки</li><li class="st st3"><b>3</b>Результат</li></ol>
+  </header>
+
+  <main class="grid">
+    <section class="col">
+      <div class="panel prompt" id="prompt"></div>
+      <div class="stage">
+        <canvas class="main locked" id="cv" width="600" height="780" aria-label="Фото с отмеченными точками"></canvas>
+        <div class="loupe" id="loupe" hidden><canvas id="lc" width="128" height="128"></canvas><span id="ll"></span></div>
+        <div class="badge" id="badge">Пример на схеме</div>
+        <div class="ov" id="ov" hidden><div><b id="ovT">ИИ работает</b><small id="ovS"></small><button class="btn" id="ovStop" type="button">Стоп</button></div></div>
+      </div>
+      <div class="toolbar" id="toolbar">
+        <div class="btn filebtn primary" id="pick"><span id="pickT">Выбрать фото</span><input id="file" type="file" accept="image/*" aria-label="Выбрать фото"></div>
+        <div class="btn filebtn" id="camBtn"><span>Снять на камеру</span><input id="cam" type="file" accept="image/*" capture="user" aria-label="Снять на камеру"></div>
+        <button class="btn primary" id="meshBtn" type="button" hidden>Авто-расстановка (468 точек)</button>
+        <button class="btn" id="aiBtn" type="button" hidden>Расставить точки с ИИ (Claude)</button>
+        <button class="btn" id="aiStop" type="button" hidden>Стоп</button>
+        <button class="btn" id="undo" type="button" hidden>Назад на точку</button>
+        <button class="btn" id="reset" type="button" hidden>Начать заново</button>
+      </div>
+      <p class="err" id="msg" hidden></p>
+      <p class="hint2" id="aiMsg" hidden></p>
+      <p class="hint2">Если выбор файла не открывается, вставьте фото из буфера (Ctrl+V) или перетащите файл на страницу.</p>
+    </section>
+
+    <section class="col">
+      <div class="panel" id="results"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>Что это измеряет: пропорции лица на одном снимке. Шкала PSL родилась на форумах и не является научной, поэтому перевод баллов в «тиры» здесь приблизительный. Точность замеров упирается в точность точек и в снимок: ракурс, свет, дистанция камеры и мимика меняют числа.</p>
+    <p>Автоматическая расстановка: MediaPipe Face Mesh, 468 точек лица. Это специальная нейросеть, она точнее Claude по картинке, но «идеально» не бывает: линия роста волос в сетке не размечена (берётся верх лба по сетке), а на поворотах головы, в очках, при бороде или тени точки смещаются. Проверьте ключевые точки лупой.</p>
+    <p>Это не оценка человека. Числа описывают геометрию, а не то, как выглядит живое лицо.</p>
+  </footer>
+</div>
+
+<script>
+//<analysis>
+var PTS=[
+ {id:'hair',name:'Линия роста волос',hint:'Верхняя точка лба по центру, где начинаются волосы.',s:[50,12]},
+ {id:'glab',name:'Межбровье',hint:'Точка по центру между бровями, на уровне их начала.',s:[50,44.7]},
+ {id:'sub',name:'Основание носа',hint:'Точка под носом, где перегородка переходит в верхнюю губу.',s:[50,77.3]},
+ {id:'men',name:'Низ подбородка',hint:'Самая нижняя точка подбородка по центру.',s:[50,110]},
+ {id:'pupL',name:'Зрачок слева на фото',hint:'Центр зрачка глаза, который на фото слева.',s:[33,54.9]},
+ {id:'pupR',name:'Зрачок справа на фото',hint:'Центр зрачка глаза, который на фото справа.',s:[67,54.9]},
+ {id:'medL',name:'Внутренний уголок, левый глаз',hint:'Уголок глаза у переносицы, глаз слева на фото.',s:[41.5,55.5]},
+ {id:'latL',name:'Внешний уголок, левый глаз',hint:'Уголок глаза у виска, глаз слева на фото.',s:[24.5,53.8]},
+ {id:'medR',name:'Внутренний уголок, правый глаз',hint:'Уголок глаза у переносицы, глаз справа на фото.',s:[58.5,55.5]},
+ {id:'latR',name:'Внешний уголок, правый глаз',hint:'Уголок глаза у виска, глаз справа на фото.',s:[75.5,53.8]},
+ {id:'zygL',name:'Скула слева',hint:'Самая широкая точка лица на уровне скул, слева на фото.',s:[15,58]},
+ {id:'zygR',name:'Скула справа',hint:'Самая широкая точка лица на уровне скул, справа на фото.',s:[85,58]},
+ {id:'goL',name:'Угол челюсти слева',hint:'Место, где нижняя челюсть поворачивает вверх к уху, слева на фото.',s:[22,95]},
+ {id:'goR',name:'Угол челюсти справа',hint:'Место, где нижняя челюсть поворачивает вверх к уху, справа на фото.',s:[78,95]},
+ {id:'alL',name:'Крыло носа слева',hint:'Крайняя боковая точка ноздри, слева на фото.',s:[41,77]},
+ {id:'alR',name:'Крыло носа справа',hint:'Крайняя боковая точка ноздри, справа на фото.',s:[59,77]},
+ {id:'mouL',name:'Уголок рта слева',hint:'Место, где сходятся верхняя и нижняя губа, слева на фото.',s:[36,88.5]},
+ {id:'mouR',name:'Уголок рта справа',hint:'Место, где сходятся верхняя и нижняя губа, справа на фото.',s:[64,88.5]},
+ {id:'ls',name:'Верх верхней губы',hint:'Верхний край красной каймы верхней губы по центру.',s:[50,82]},
+ {id:'sto',name:'Смыкание губ',hint:'Линия, где губы касаются друг друга, по центру.',s:[50,88.2]},
+ {id:'li',name:'Низ нижней губы',hint:'Нижний край нижней губы по центру.',s:[50,97.5]}
+];
+var IDX={};PTS.forEach(function(p,i){IDX[p.id]=i;});
+var SPEC=[
+ {id:'sym',name:'Симметрия',w:16,ideal:[96,100],tol:14,idealText:'96–100%',low:'есть асимметрия',high:'',note:'Насколько левая и правая половины лица зеркальны относительно осевой линии.'},
+ {id:'thirds',name:'Вертикальные трети',w:12,ideal:[0,2],tol:10,idealText:'33 / 33 / 33',low:'',high:'трети неравны',note:'Лоб, середина лица и низ лица: каждая часть должна занимать около трети высоты.'},
+ {id:'lower',name:'Нижняя треть',w:5,ideal:[1.8,2.4],tol:1.0,idealText:'1 : 2',low:'подбородок короткий',high:'подбородок длинный',note:'Основание носа до губ против губ до подбородка. Классический канон 1 к 2.'},
+ {id:'canthal',name:'Кантальный наклон',w:12,ideal:[4,8],tol:8,idealText:'+4…+8°',low:'ниже нормы',high:'выше нормы',note:'Угол от внутреннего к внешнему уголку глаза. Плюс значит, что внешний уголок выше.'},
+ {id:'fwhr',name:'fWHR',w:9,ideal:[1.75,2.05],tol:.45,idealText:'1.75–2.05',low:'лицо узкое',high:'лицо широкое',note:'Ширина скул к высоте от межбровья до верхней губы.'},
+ {id:'jaw',name:'Челюсть к скулам',w:10,ideal:[.78,.86],tol:.2,idealText:'0.78–0.86',low:'челюсть узкая',high:'челюсть широкая',note:'Расстояние между углами челюсти к ширине скул.'},
+ {id:'mid',name:'Середина лица',w:10,ideal:[.95,1.15],tol:.35,idealText:'0.95–1.15',low:'середина длинная',high:'середина короткая',note:'Расстояние между зрачками к расстоянию от зрачков до линии губ.'},
+ {id:'eyes',name:'Межглазье',w:8,ideal:[.9,1.1],tol:.35,idealText:'0.9–1.1',low:'глаза близко',high:'глаза далеко',note:'Расстояние между внутренними уголками к ширине глаза (правило пяти глаз).'},
+ {id:'nose',name:'Ширина носа',w:6,ideal:[.9,1.15],tol:.35,idealText:'0.9–1.15',low:'нос узкий',high:'нос широкий',note:'Ширина носа к расстоянию между внутренними уголками глаз.'},
+ {id:'mouth',name:'Ширина рта',w:6,ideal:[1.4,1.7],tol:.5,idealText:'1.4–1.7',low:'рот узкий',high:'рот широкий',note:'Ширина рта к ширине носа.'},
+ {id:'lips',name:'Губы',w:6,ideal:[1.3,1.8],tol:.8,idealText:'1.3–1.8',low:'нижняя тонкая',high:'нижняя полная',note:'Высота нижней губы к высоте верхней.'}
+];
+var TIERS=[[0,'Sub-5'],[38,'LTN'],[52,'MTN'],[64,'HTN'],[75,'Chadlite'],[86,'Chad'],[94,'Gigachad']];
+function scoreOf(v,ideal,tol){var d=v<ideal[0]?ideal[0]-v:(v>ideal[1]?v-ideal[1]:0);return d===0?100:Math.max(0,100*(1-d/tol));}
+function analyze(pts){
+  var g=function(id){return pts[IDX[id]];};
+  var a=g('pupL'),b=g('pupR');
+  var th=Math.atan2(b.y-a.y,b.x-a.x),c=Math.cos(th),s=Math.sin(th);
+  var q={};PTS.forEach(function(p){var o=g(p.id);q[p.id]={x:o.x*c+o.y*s,y:-o.x*s+o.y*c};});
+  var ipd=q.pupR.x-q.pupL.x,zw=q.zygR.x-q.zygL.x;
+  var ic=q.medR.x-q.medL.x,ew=((q.medL.x-q.latL.x)+(q.latR.x-q.medR.x))/2;
+  var aw=q.alR.x-q.alL.x,mw=q.mouR.x-q.mouL.x,jw=q.goR.x-q.goL.x;
+  var t1=q.glab.y-q.hair.y,t2=q.sub.y-q.glab.y,t3=q.men.y-q.sub.y;
+  var up=q.sto.y-q.ls.y,lo=q.li.y-q.sto.y,uf=q.ls.y-q.glab.y,ul=q.sto.y-q.sub.y,ll=q.men.y-q.sto.y;
+  var pm=q.sto.y-q.pupL.y;
+  var vals=[ipd,zw,ic,ew,aw,mw,jw,t1,t2,t3,up,lo,uf,ul,ll,pm];
+  for(var i=0;i<vals.length;i++){if(!(vals[i]>0.0001))return {error:'Точки расставлены в неверном порядке или перепутаны стороны. Проверьте зрачки (левый на фото слева), линию роста волос, подбородок и губы.'};}
+  var pairs=[['pupL','pupR'],['medL','medR'],['latL','latR'],['zygL','zygR'],['goL','goR'],['mouL','mouR'],['alL','alR']];
+  var x0=0;pairs.forEach(function(p){x0+=(q[p[0]].x+q[p[1]].x)/2;});x0/=pairs.length;
+  var h=0;pairs.forEach(function(p){var dl=x0-q[p[0]].x,dr=q[p[1]].x-x0;h+=Math.abs(dl-dr)/Math.max(1e-6,dl+dr);});h/=pairs.length;
+  var m=0,mids=['hair','glab','sub','sto','men','ls','li'];mids.forEach(function(id){m+=Math.abs(q[id].x-x0)/zw;});m/=mids.length;
+  var vv=0,vp=pairs.slice(1);vp.forEach(function(p){vv+=Math.abs(q[p[0]].y-q[p[1]].y)/(t2+t3);});vv/=vp.length;
+  var sym=Math.max(0,Math.min(100,100*(1-(h+m+vv))));
+  var tot=t1+t2+t3,p1=100*t1/tot,p2=100*t2/tot,p3=100*t3/tot;
+  var dev=Math.max(Math.abs(p1-33.333),Math.abs(p2-33.333),Math.abs(p3-33.333));
+  var tl=Math.atan2(q.medL.y-q.latL.y,Math.abs(q.medL.x-q.latL.x))*180/Math.PI;
+  var tr=Math.atan2(q.medR.y-q.latR.y,Math.abs(q.latR.x-q.medR.x))*180/Math.PI;
+  var tilt=(tl+tr)/2;
+  var raw={sym:sym,thirds:dev,lower:ll/ul,canthal:tilt,fwhr:zw/uf,jaw:jw/zw,mid:ipd/pm,eyes:ic/ew,nose:aw/ic,mouth:mw/aw,lips:lo/up};
+  var disp={
+    sym:sym.toFixed(1)+'%',
+    thirds:Math.round(p1)+' / '+Math.round(p2)+' / '+Math.round(p3),
+    lower:'1 : '+raw.lower.toFixed(1),
+    canthal:(tilt>=0?'+':'')+tilt.toFixed(1)+'°',
+    fwhr:raw.fwhr.toFixed(2),jaw:raw.jaw.toFixed(2),mid:raw.mid.toFixed(2),eyes:raw.eyes.toFixed(2),
+    nose:raw.nose.toFixed(2),mouth:raw.mouth.toFixed(2),lips:raw.lips.toFixed(2)
+  };
+  var items=[],sw=0,acc=0;
+  SPEC.forEach(function(sp){
+    var v=raw[sp.id],sc=scoreOf(v,sp.ideal,sp.tol);
+    var dir=v<sp.ideal[0]?'low':(v>sp.ideal[1]?'high':'ok');
+    items.push({spec:sp,v:v,d:disp[sp.id],score:sc,dir:dir});
+    sw+=sp.w;acc+=sp.w*sc;
+  });
+  var overall=acc/sw,tier=TIERS[0][1];
+  TIERS.forEach(function(t){if(overall>=t[0])tier=t[1];});
+  return {items:items,overall:overall,tier:tier,psl:1+7*overall/100,theta:th};
+}
+//</analysis>
+
+(function(){
+var $=function(id){return document.getElementById(id);};
+function log(t){}
+window.addEventListener('error',function(e){log('JS-ошибка: '+e.message);});
+window.addEventListener('unhandledrejection',function(e){var r=e.reason;log('Необработанная ошибка: '+((r&&(r.code||r.message))||r));});
+log('Страница версии 9 запущена. Face Mesh: '+(typeof FaceMesh!=='undefined'?'скрипт загружен':'скрипт НЕ загружен')+'. Доступ к Claude: '+(window.claude?'есть':'нет')+'. '+String(navigator.userAgent).slice(0,70));
+var cv=$('cv'),ctx=cv.getContext('2d'),base=document.createElement('canvas'),bctx=base.getContext('2d');
+var lp=$('loupe'),lc=$('lc'),lctx=lc.getContext('2d');
+var N=PTS.length,mode='demo',pts=[],cur=0,aim=null,drag=-1,pressed=false,raf=0;
+var meshAll=null,meshBusy=false,fm=null,pendingRes=null,meshOn=true;
+var SYMP=[[33,263],[133,362],[159,386],[145,374],[234,454],[172,397],[132,361],[58,288],[61,291],[129,358],[70,300],[105,334],[46,276],[93,323],[136,365],[150,379],[176,400],[148,377],[21,251],[54,284],[103,332],[67,297],[109,338],[127,356]];
+var MIDP=[10,9,168,6,1,2,152];
+function meshSymmetry(){
+  if(!meshAll||pts.length<N)return null;
+  var a=pts[IDX.pupL],b=pts[IDX.pupR],th=Math.atan2(b.y-a.y,b.x-a.x),c=Math.cos(th),s=Math.sin(th);
+  var Q=meshAll.map(function(p){return {x:p.x*c+p.y*s,y:-p.x*s+p.y*c};});
+  var x0=0;MIDP.forEach(function(i){x0+=Q[i].x;});x0/=MIDP.length;
+  var fw=Math.abs(Q[454].x-Q[234].x)||1,sum=0,list=[];
+  SYMP.forEach(function(p){
+    var l=Q[p[0]],r=Q[p[1]];if(l.x>r.x){l=Q[p[1]];r=Q[p[0]];}
+    var dev=(Math.abs((x0-l.x)-(r.x-x0))+Math.abs(l.y-r.y))/fw;sum+=dev;list.push({a:p[0],b:p[1],dev:dev});
+  });
+  return {score:Math.max(0,Math.min(100,100*(1-4*sum/SYMP.length))),list:list};
+}
+function downloadPng(){
+  var R=analyze(currentPoints());if(R.error)return;
+  var W=cv.width,H=cv.height,bar=Math.round(W*0.16),c=document.createElement('canvas');c.width=W;c.height=H+bar;
+  var g=c.getContext('2d');g.drawImage(cv,0,0);g.fillStyle='#0A0A0B';g.fillRect(0,H,W,bar);
+  g.fillStyle='#F6EEDA';g.font='800 '+Math.round(bar*.42)+'px sans-serif';g.fillText(R.tier+' · '+Math.round(R.overall)+'/100',W*.04,H+bar*.55);
+  g.fillStyle='#A89F88';g.font='500 '+Math.round(bar*.2)+'px sans-serif';g.fillText('≈ PSL '+R.psl.toFixed(1)+' · Фейсметр 10',W*.04,H+bar*.85);
+  c.toBlob(function(b){var u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='facemeter.png';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},2000);log('Картинка результата сохранена');},'image/png');
+}
+var FACE='M50 12 C78 12 86 36 85 58 C85 76 82 90 76 98 C68 107 58 110 50 110 C42 110 32 107 24 98 C18 90 15 76 15 58 C14 36 22 12 50 12 Z';
+
+function demoPoints(){
+  var jit={goR:[1.4,0],goL:[5,1],mouR:[0,-1.2],men:[1.6,4.5],alR:[2.4,.4],alL:[-1,0],latL:[0,3.4],latR:[0,2.4],zygL:[.8,0],hair:[0,3.5],medL:[1.8,0],li:[0,-2.2]};
+  return PTS.map(function(p){var j=jit[p.id]||[0,0];return {x:(p.s[0]+j[0])*6,y:(p.s[1]+j[1])*6};});
+}
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+
+function drawSchematic(){
+  base.width=600;base.height=780;
+  bctx.fillStyle=css('--field')||'#E2E7ED';bctx.fillRect(0,0,600,780);
+  bctx.save();bctx.scale(6,6);
+  var line=css('--muted')||'#5A6672';
+  bctx.lineWidth=.5;bctx.strokeStyle=line;bctx.lineCap='round';
+  var f=new Path2D(FACE);bctx.fillStyle=css('--panel')||'#fff';bctx.fill(f);bctx.stroke(f);
+  [[41.5,24.5,33],[58.5,75.5,67]].forEach(function(e){
+    bctx.beginPath();bctx.ellipse((e[0]+e[1])/2,54.7,8.6,3,0,0,Math.PI*2);bctx.stroke();
+    bctx.beginPath();bctx.arc(e[2],54.9,1.7,0,Math.PI*2);bctx.fillStyle=line;bctx.fill();
+    bctx.beginPath();bctx.moveTo(e[1]<e[0]?e[1]-1:e[0]-1,47.5);bctx.lineTo(e[1]<e[0]?e[0]+1:e[1]+1,47.5);bctx.stroke();
+  });
+  bctx.beginPath();bctx.moveTo(48.5,58);bctx.lineTo(46.5,74);bctx.quadraticCurveTo(50,78,53.5,74);bctx.lineTo(51.5,58);bctx.stroke();
+  bctx.beginPath();bctx.moveTo(36,88.5);bctx.quadraticCurveTo(43,86.5,50,88.2);bctx.quadraticCurveTo(57,86.5,64,88.5);bctx.quadraticCurveTo(57,93,50,97);bctx.quadraticCurveTo(43,93,36,88.5);bctx.stroke();
+  bctx.restore();
+}
+
+function msg(t){var m=$('msg');m.textContent=t||'';m.hidden=!t;}
+function loadFile(f){
+  if(!f){log('Файл не выбран');return;}
+  log('Файл: '+f.name+', '+(f.type||'тип неизвестен')+', '+Math.round(f.size/1024)+' КБ');
+  if(f.type&&!/^image\//.test(f.type)){msg('Это не изображение. Выберите файл JPG или PNG.');return;}
+  msg('');
+  var r=new FileReader();
+  r.onerror=function(){log('Ошибка чтения файла');msg('Не удалось прочитать файл. Попробуйте другое фото.');};
+  r.onload=function(){
+    var im=new Image();
+    im.onerror=function(){log('Ошибка: браузер не смог открыть изображение');msg('Не удалось открыть изображение. Если это HEIC с iPhone, сделайте скриншот фото или снимите через «Снять на камеру».');};
+    im.onload=function(){
+      var sc=Math.min(1,1100/Math.max(im.naturalWidth,im.naturalHeight));
+      var W=Math.max(1,Math.round(im.naturalWidth*sc)),H=Math.max(1,Math.round(im.naturalHeight*sc));
+      base.width=W;base.height=H;bctx.drawImage(im,0,0,W,H);
+      cv.width=W;cv.height=H;pts=[];cur=0;aim=null;meshAll=null;mode='place';log('Фото открыто: '+W+'×'+H+'. Режим расстановки точек.');update();
+      setTimeout(function(){runMesh();},60);
+    };
+    im.src=r.result;
+  };
+  r.readAsDataURL(f);
+}
+
+function currentPoints(){return mode==='demo'?demoPoints():pts;}
+
+function render(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.drawImage(base,0,0);
+  if(meshAll&&meshOn&&mode!=='demo'){
+    ctx.save();
+    if(typeof FACEMESH_TESSELATION!=='undefined'){
+      ctx.beginPath();
+      FACEMESH_TESSELATION.forEach(function(e){var a=meshAll[e[0]],b=meshAll[e[1]];if(a&&b){ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);}});
+      ctx.strokeStyle='rgba(212,175,55,.38)';ctx.lineWidth=Math.max(.5,cv.width/1400);ctx.stroke();
+    }
+    var dr=Math.max(.9,cv.width/700);ctx.fillStyle='rgba(255,255,255,.85)';
+    meshAll.forEach(function(p){ctx.beginPath();ctx.arc(p.x,p.y,dr,0,6.2832);ctx.fill();});
+    var ms=meshSymmetry();
+    if(ms){
+      ctx.beginPath();
+      ms.list.slice().sort(function(a,b){return b.dev-a.dev;}).slice(0,5).forEach(function(e){if(e.dev<.015)return;var p=meshAll[e.a],q=meshAll[e.b];ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);});
+      ctx.strokeStyle='rgba(255,107,129,.9)';ctx.lineWidth=Math.max(1.2,cv.width/500);ctx.stroke();
+    }
+    ctx.restore();
+  }
+  var P=currentPoints(),W=cv.width,H=cv.height,r=Math.max(3.5,W/170);
+  var LINE='rgba(212,175,55,.9)',DOT='#F5D77A',INK='#11161C';
+  if(P.length===N){
+    var a=P[IDX.pupL],b=P[IDX.pupR],th=Math.atan2(b.y-a.y,b.x-a.x),ux=Math.cos(th),uy=Math.sin(th),L=W+H;
+    var ln=function(p,dx,dy,col,w,dash){ctx.beginPath();ctx.moveTo(p.x-dx*L,p.y-dy*L);ctx.lineTo(p.x+dx*L,p.y+dy*L);ctx.strokeStyle=col;ctx.lineWidth=w;ctx.setLineDash(dash||[]);ctx.stroke();ctx.setLineDash([]);};
+    var sg=function(p,q,col,w){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle=col;ctx.lineWidth=w;ctx.stroke();};
+    ['hair','glab','sub','men'].forEach(function(id){ln(P[IDX[id]],ux,uy,'rgba(212,175,55,.55)',Math.max(1,W/700));});
+    var cx=0,cy=0,pr=[['pupL','pupR'],['medL','medR'],['latL','latR'],['zygL','zygR'],['goL','goR'],['mouL','mouR'],['alL','alR']];
+    pr.forEach(function(p){cx+=(P[IDX[p[0]]].x+P[IDX[p[1]]].x)/2;cy+=(P[IDX[p[0]]].y+P[IDX[p[1]]].y)/2;});
+    cx/=pr.length;cy/=pr.length;
+    ln({x:cx,y:cy},-uy,ux,'rgba(255,255,255,.8)',Math.max(1,W/700),[8,6]);
+    sg(P[IDX.zygL],P[IDX.zygR],LINE,Math.max(1.2,W/600));
+    sg(P[IDX.goL],P[IDX.goR],LINE,Math.max(1.2,W/600));
+    sg(P[IDX.latL],P[IDX.medL],'#FFF1B8',Math.max(2,W/400));
+    sg(P[IDX.latR],P[IDX.medR],'#FFF1B8',Math.max(2,W/400));
+  }
+  P.forEach(function(p,i){
+    ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fillStyle=(mode==='adjust'&&i===drag)?'#FF7A59':DOT;ctx.fill();
+    ctx.lineWidth=Math.max(1.5,r/3);ctx.strokeStyle=INK;ctx.stroke();
+  });
+  if(mode==='place'&&aim){
+    ctx.beginPath();ctx.moveTo(aim.x-r*3,aim.y);ctx.lineTo(aim.x+r*3,aim.y);ctx.moveTo(aim.x,aim.y-r*3);ctx.lineTo(aim.x,aim.y+r*3);
+    ctx.strokeStyle='#FF7A59';ctx.lineWidth=Math.max(1.5,W/500);ctx.stroke();
+  }
+}
+
+function showLoupe(p,label){
+  var S=lc.width,sw=S/4;
+  lctx.fillStyle='#000';lctx.fillRect(0,0,S,S);
+  lctx.drawImage(base,p.x-sw/2,p.y-sw/2,sw,sw,0,0,S,S);
+  lctx.strokeStyle='#FF7A59';lctx.lineWidth=1.5;lctx.beginPath();
+  lctx.moveTo(S/2-14,S/2);lctx.lineTo(S/2+14,S/2);lctx.moveTo(S/2,S/2-14);lctx.lineTo(S/2,S/2+14);lctx.stroke();
+  $('ll').textContent=label;
+  lp.classList.toggle('right',p.x<cv.width/2&&p.y<cv.height/2);
+  lp.hidden=false;
+}
+function hideLoupe(){lp.hidden=true;}
+function pos(e){
+  var r=cv.getBoundingClientRect();
+  return {x:Math.max(0,Math.min(cv.width,(e.clientX-r.left)*cv.width/r.width)),y:Math.max(0,Math.min(cv.height,(e.clientY-r.top)*cv.height/r.height))};
+}
+
+cv.addEventListener('pointerdown',function(e){
+  if(mode==='demo'||aiBusy||meshBusy)return;
+  e.preventDefault();
+  try{cv.setPointerCapture(e.pointerId);}catch(_){}
+  var p=pos(e);
+  if(mode==='place'){pressed=true;aim=p;showLoupe(p,PTS[cur].name);render();}
+  else if(mode==='adjust'){
+    var thr=30*cv.width/cv.getBoundingClientRect().width,best=-1,bd=1e9;
+    pts.forEach(function(q,i){var d=Math.hypot(q.x-p.x,q.y-p.y);if(d<bd){bd=d;best=i;}});
+    if(best>=0&&bd<=thr){drag=best;pressed=true;pts[best]=p;showLoupe(p,PTS[best].name);render();scheduleResults();}
+  }
+});
+cv.addEventListener('pointermove',function(e){
+  if(mode==='demo')return;
+  var p=pos(e);
+  if(mode==='place'){
+    if(pressed||e.pointerType==='mouse'){aim=p;showLoupe(p,PTS[cur].name);render();}
+  }else if(mode==='adjust'&&pressed&&drag>=0){
+    pts[drag]=p;showLoupe(p,PTS[drag].name);render();scheduleResults();
+  }
+});
+function endPress(e,commit){
+  if(mode==='place'){
+    if(pressed&&commit&&aim){pts.push({x:aim.x,y:aim.y});cur++;if(cur>=N){mode='adjust';}aim=null;hideLoupe();pressed=false;update();return;}
+    pressed=false;
+  }else if(mode==='adjust'){
+    pressed=false;drag=-1;hideLoupe();render();renderResults();
+  }
+}
+cv.addEventListener('pointerup',function(e){endPress(e,true);});
+cv.addEventListener('pointercancel',function(e){endPress(e,false);hideLoupe();});
+cv.addEventListener('pointerleave',function(e){if(mode==='place'&&!pressed&&e.pointerType==='mouse'){aim=null;hideLoupe();render();}});
+
+function scheduleResults(){if(raf)return;raf=requestAnimationFrame(function(){raf=0;renderResults();});}
+
+function schematic(i){
+  var d='';
+  PTS.forEach(function(p,k){
+    var x=p.s[0],y=p.s[1];
+    if(mode==='adjust'||k<i)d+='<circle cx="'+x+'" cy="'+y+'" r="1.7" fill="var(--good)"/>';
+    else if(k===i)d+='<circle cx="'+x+'" cy="'+y+'" r="6" fill="var(--accent)" opacity=".28"/><circle cx="'+x+'" cy="'+y+'" r="2.8" fill="var(--accent)"/>';
+    else d+='<circle cx="'+x+'" cy="'+y+'" r="1.3" fill="var(--muted)" opacity=".55"/>';
+  });
+  return '<svg viewBox="0 6 100 112" aria-hidden="true"><path d="'+FACE+'" fill="none" stroke="var(--line)" stroke-width="1.2"/>'+d+'</svg>';
+}
+
+function renderPrompt(){
+  var el=$('prompt');
+  if(mode==='demo'){
+    el.innerHTML='<div class="txt"><div class="eyebrow">Шаг 1 из 3 · фото</div><h2>Загрузите снимок анфас</h2><p class="hint">Пока на экране шаблон лица, чтобы было видно, как выглядит результат.</p><ul class="tips"><li>Лицо прямо в камеру, спокойное выражение.</li><li>Камера на уровне глаз, снимайте с 1,5–2 м и приближайте: близкая камера искажает пропорции.</li><li>Волосы убраны со лба, свет ровный.</li></ul></div>';
+  }else if(mode==='place'){
+    var p=PTS[cur];
+    el.innerHTML='<div class="txt"><div class="eyebrow">Шаг 2 из 3 · точка '+(cur+1)+' из '+N+'</div><h2>'+p.name+'</h2><p class="hint">'+p.hint+' Коснитесь фото и ведите пальцем, лупа покажет место. Отпустите, чтобы поставить точку.</p><div class="prog"><i style="width:'+(100*cur/N)+'%"></i></div></div>'+schematic(cur);
+  }else{
+    el.innerHTML='<div class="txt"><div class="eyebrow">Шаг 3 из 3 · результат</div><h2>Все точки стоят</h2><p class="hint">Для точности перетащите любую точку на фото. Числа справа пересчитываются сразу. Точнее всего ставить точки на увеличенном снимке с хорошим светом.</p></div>'+schematic(N);
+  }
+}
+
+function esc(s){return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+function cls(s){return s>=85?'good':(s>=60?'warn':'bad');}
+var lastText='';
+function renderResults(){
+  var el=$('results'),P=currentPoints();
+  if(P.length<N){
+    el.innerHTML='<div class="sec"><div class="eyebrow">Результат</div><h2>Поставлено '+P.length+' из '+N+' точек</h2><p class="hint" style="color:var(--muted)">Когда отметите все точки, здесь появятся 11 замеров и общий балл.</p></div>';
+    lastText='';return;
+  }
+  var R=analyze(P);
+  if(R.error){el.innerHTML='<div class="sec"><div class="eyebrow">Результат</div><p class="err">'+esc(R.error)+'</p></div>';lastText='';return;}
+  var score=Math.round(R.overall);
+  var legend=TIERS.map(function(t){return t[1]===R.tier?'<b>'+t[1]+'</b>':'<span>'+t[1]+'</span>';}).join('<span>·</span>');
+  var weak=R.items.filter(function(i){return i.score<100;}).sort(function(a,b){return b.spec.w*(100-b.score)-a.spec.w*(100-a.score);}).slice(0,3);
+  var strong=R.items.filter(function(i){return i.score>=100;}).map(function(i){return i.spec.name;});
+  var h='<div class="score"><div class="scoreTop"><div><div class="eyebrow">Оценка пропорций</div><div class="ring" style="--p:'+score+'"><span>'+score+'</span></div></div><div class="tier"><b>'+R.tier+'</b><span>≈ PSL '+R.psl.toFixed(1)+' · перевод приблизительный</span></div></div>';
+  h+='<div class="meter"><i style="left:'+Math.max(2,Math.min(98,R.overall))+'%"></i></div><div class="legend">'+legend+'</div>';
+  if(mode==='demo')h+='<p class="demo-note">Это пример на схематичном шаблоне, а не оценка человека. Загрузите своё фото, чтобы получить свои числа.</p>';
+  h+='</div>';
+  h+='<div class="sec"><h2>Что тянет балл вниз</h2>';
+  if(weak.length){h+='<ul class="weak">'+weak.map(function(i){var w=i.dir==='low'?i.spec.low:(i.dir==='high'?i.spec.high:'');return '<li><b>'+i.spec.name+'</b><span class="'+cls(i.score)+'">'+i.d+'</span><em>норма '+i.spec.idealText+(w?' · '+w:'')+'</em></li>';}).join('')+'</ul>';}
+  else h+='<p style="color:var(--muted)">Все замеры внутри эталонных диапазонов.</p>';
+  if(strong.length)h+='<p style="color:var(--muted);font-size:13px">В норме: '+strong.join(', ')+'.</p>';
+  h+='</div>';
+  h+='<div class="sec"><h2>Все замеры</h2><div class="rows">';
+  R.items.forEach(function(i){
+    var c=cls(i.score),word=i.dir==='ok'?'в норме':(i.dir==='low'?(i.spec.low||'ниже нормы'):(i.spec.high||'выше нормы'));
+    h+='<div class="row"><span class="nm">'+i.spec.name+'</span><span class="val '+c+'">'+i.d+'</span><span class="note">'+i.spec.note+'</span><span class="meta"><span>норма '+i.spec.idealText+'</span><span class="'+c+'">'+word+' · '+Math.round(i.score)+'/100</span></span><span class="tr"><i class="fill-'+c+'" style="width:'+Math.round(i.score)+'%"></i></span></div>';
+  });
+  var MS=meshSymmetry();
+  if(MS){var mc=cls(MS.score);h+='<div class="row"><span class="nm">Симметрия по сетке</span><span class="val '+mc+'">'+MS.score.toFixed(1)+'%</span><span class="note">Сравнение '+SYMP.length+' зеркальных пар точек сетки. Красные линии на фото показывают самые асимметричные пары. В общий балл не входит.</span><span class="tr"><i class="fill-'+mc+'" style="width:'+Math.round(MS.score)+'%"></i></span></div>';}
+  h+='</div></div>';
+  if(mode!=='demo')h+='<div class="toolbar"><button class="btn" id="copy" type="button">Скопировать результат</button><button class="btn primary" id="dl" type="button">Скачать картинку</button>'+(meshAll?'<button class="btn" id="mtog" type="button">'+(meshOn?'Скрыть сетку':'Показать сетку')+'</button>':'')+'</div>';
+  el.innerHTML=h;
+  lastText='Фейсметр: '+score+'/100, '+R.tier+' (≈ PSL '+R.psl.toFixed(1)+')\n'+R.items.map(function(i){return i.spec.name+': '+i.d+' (норма '+i.spec.idealText+')';}).join('\n');
+  if($('dl'))$('dl').addEventListener('click',downloadPng);
+  if($('mtog'))$('mtog').addEventListener('click',function(){meshOn=!meshOn;render();$('mtog').textContent=meshOn?'Скрыть сетку':'Показать сетку';});
+  var cb=$('copy');
+  if(cb)cb.addEventListener('click',function(){
+    var ok=function(){cb.textContent='Скопировано';setTimeout(function(){cb.textContent='Скопировать результат';},1500);};
+    try{navigator.clipboard.writeText(lastText).then(ok,function(){selectFallback();});}catch(_){selectFallback();}
+  });
+}
+function selectFallback(){
+  var cb=$('copy');if(!cb)return;
+  var ta=document.createElement('textarea');ta.value=lastText;ta.style.cssText='width:100%;height:140px;margin-top:8px;font:12px var(--font-mono)';
+  cb.parentNode.appendChild(ta);ta.focus();ta.select();
+}
+
+function update(){
+  if(mode==='demo'){drawSchematic();}
+  cv.classList.toggle('locked',mode==='demo');
+  document.body.setAttribute('data-step',mode==='demo'?'1':(mode==='place'?'2':'3'));
+  $('badge').hidden=mode!=='demo';
+  $('undo').hidden=mode==='demo';
+  $('reset').hidden=mode==='demo';
+  $('pickT').textContent=mode==='demo'?'Выбрать фото':'Другое фото';
+  $('pick').className=mode==='demo'?'btn filebtn primary':'btn filebtn';
+  renderPrompt();render();renderResults();syncAi();
+}
+
+/* ---- Автоматическая расстановка точек через Claude (capability sample) ---- */
+var sample=null,aiMax=1,aiCtl=null,aiBusy=false;
+function syncAi(){
+  $('aiBtn').hidden=!(sample&&mode!=='demo');
+  $('aiBtn').disabled=aiBusy||meshBusy;
+  $('meshBtn').hidden=mode==='demo';
+  $('meshBtn').disabled=aiBusy||meshBusy;
+  $('meshBtn').textContent=meshBusy?'Face Mesh работает…':'Авто-расстановка (468 точек)';
+  $('aiStop').hidden=!aiBusy;
+  $('ov').hidden=!aiBusy;
+  $('aiBtn').textContent=aiBusy?'ИИ работает…':'Расставить точки с ИИ (Claude)';
+}
+function aiNote(t){
+  var m=$('aiMsg');m.textContent=t||'';m.hidden=!t;
+  if(aiBusy){$('ov').hidden=false;$('ovS').textContent=t||'';}
+}
+function parseLoose(txt){
+  try{return JSON.parse(txt);}catch(_){}
+  var a=txt.indexOf('{'),b=txt.lastIndexOf('}');
+  if(a>=0&&b>a){try{return JSON.parse(txt.slice(a,b+1));}catch(_){}}
+  var err={code:'invalid_json',message:'ответ не разобрался как JSON'};throw err;
+}
+async function askJson(input,opts){
+  if(typeof sample.json==='function')return sample.json(input,opts);
+  var r=await sample(input,opts);
+  return parseLoose(r.text);
+}
+var AI_OFF='Запасной вариант через Claude в этом окне недоступен. Основная авто-расстановка (Face Mesh, 468 точек) работает без него.';
+
+/* ---- Основная авто-расстановка: MediaPipe Face Mesh, 468 (478 с радужками) точек ---- */
+function getMesh(){
+  if(fm)return fm;
+  if(typeof FaceMesh==='undefined')return null;
+  fm=new FaceMesh({locateFile:function(f){return 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/'+f;}});
+  fm.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:0.5,minTrackingConfidence:0.5,selfieMode:false});
+  fm.onResults(function(r){if(pendingRes){var f=pendingRes;pendingRes=null;f(r);}});
+  return fm;
+}
+async function runMesh(){
+  if(mode==='demo'||meshBusy||aiBusy)return;
+  var f=getMesh();
+  if(!f){log('Face Mesh: скрипт модели не загрузился');msg('Модель Face Mesh не загрузилась (нет доступа к cdn.jsdelivr.net). Попробуйте открыть страницу в браузере, используйте кнопку Claude или расставьте точки вручную.');return;}
+  meshBusy=true;syncAi();msg('');
+  aiNote('Face Mesh ищет лицо и ставит 468 точек. Первый запуск скачивает модель, до 30 секунд.');
+  log('Face Mesh: запуск');
+  try{
+    var res=await new Promise(function(resolve,reject){
+      var t=setTimeout(function(){pendingRes=null;reject({code:'timeout',message:'модель не ответила за 90 секунд'});},90000);
+      pendingRes=function(r){clearTimeout(t);resolve(r);};
+      f.send({image:base}).catch(function(e){clearTimeout(t);pendingRes=null;reject(e);});
+    });
+    var L=res&&res.multiFaceLandmarks&&res.multiFaceLandmarks[0];
+    if(!L||L.length<468){log('Face Mesh: лицо не найдено');msg('Лицо не найдено. Нужен один человек анфас, без сильного поворота и без закрытого лица. Можно расставить точки вручную.');aiNote('');return;}
+    var W=base.width,H=base.height;
+    var M=L.map(function(l){return {x:l.x*W,y:l.y*H};});
+    var mid=function(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};};
+    var iris=M.length>=478;
+    var map={hair:M[10],glab:M[9],sub:M[2],men:M[152],
+      pupL:iris?M[468]:mid(M[33],M[133]),pupR:iris?M[473]:mid(M[263],M[362]),
+      medL:M[133],latL:M[33],medR:M[362],latR:M[263],
+      zygL:M[234],zygR:M[454],goL:M[172],goR:M[397],alL:M[129],alR:M[358],
+      mouL:M[61],mouR:M[291],ls:M[0],sto:mid(M[13],M[14]),li:M[17]};
+    [['pupL','pupR'],['medL','medR'],['latL','latR'],['zygL','zygR'],['goL','goR'],['alL','alR'],['mouL','mouR']].forEach(function(p){
+      if(map[p[0]].x>map[p[1]].x){var t=map[p[0]];map[p[0]]=map[p[1]];map[p[1]]=t;}
+    });
+    var P=PTS.map(function(p){return {x:map[p.id].x,y:map[p.id].y};});
+    meshAll=M;pts=P;cur=N;mode='adjust';aim=null;update();
+    log('Face Mesh: готово, точек '+M.length);
+    aiNote('Готово: поставлено '+M.length+' точек сетки, 21 из них идёт в замеры. Линия роста волос берётся по верху сетки, проверьте её и остальные ключевые точки лупой.');
+  }catch(e){
+    log('Face Mesh: ошибка '+((e&&(e.code||e.name))||'')+' '+((e&&e.message)||e));
+    aiNote('');msg('Face Mesh не отработал: '+((e&&e.message)||(e&&e.code)||e)+'. Нажмите «Авто-расстановка» ещё раз, попробуйте в браузере или расставьте точки вручную.');
+  }finally{meshBusy=false;syncAi();}
+}
+function aiProbe(){
+  try{
+    if(!(window.claude&&window.claude.use)){log('ИИ недоступен: у страницы нет доступа к Claude');aiNote(AI_OFF);return;}
+    window.claude.use('sample').then(function(s){
+      if(!s){log('ИИ недоступен: Claude не подключён к этому окну (sample=null)');aiNote(AI_OFF);return;}
+      return s.limits().then(function(l){
+        if(l&&l.images){sample=s;aiMax=l.images.maxCount||1;log('ИИ доступен, изображений за запрос: '+aiMax);syncAi();aiNote('Расстановка с ИИ доступна: загрузите фото и нажмите «Расставить точки с ИИ».');}
+        else{log('ИИ недоступен: окно не принимает изображения');aiNote(AI_OFF);}
+      },function(){aiNote(AI_OFF);});
+    }).catch(function(){aiNote(AI_OFF);});
+  }catch(_){aiNote(AI_OFF);}
+}
+aiProbe();
+function blobOf(c){return new Promise(function(res){c.toBlob(res,'image/jpeg',0.92);});}
+function lbl(g,t,x,y,fs){g.font='600 '+fs+'px Inter, sans-serif';g.lineWidth=3;g.strokeStyle='#000';g.strokeText(t,x,y);g.fillStyle='#FFE14D';g.fillText(t,x,y);}
+function mark(g,x,y,r){g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.lineWidth=2.5;g.strokeStyle='#000';g.stroke();g.lineWidth=1.2;g.strokeStyle='#FFE14D';g.stroke();}
+function annotated(P,ids,rc,sc,fs){
+  var c=document.createElement('canvas');c.width=Math.max(1,Math.round(rc.w*sc));c.height=Math.max(1,Math.round(rc.h*sc));
+  var g=c.getContext('2d');g.drawImage(base,rc.x,rc.y,rc.w,rc.h,0,0,c.width,c.height);
+  ids.forEach(function(id){var p=P[IDX[id]],x=(p.x-rc.x)*sc,y=(p.y-rc.y)*sc;if(x<0||y<0||x>c.width||y>c.height)return;mark(g,x,y,5);lbl(g,id,x+8,y-6,fs);});
+  return c;
+}
+function readNorm(o,ids){
+  var out={};
+  if(!o||typeof o!=='object')return null;
+  for(var i=0;i<ids.length;i++){
+    var v=o[ids[i]];
+    if(!Array.isArray(v)||v.length<2||!isFinite(v[0])||!isFinite(v[1]))return null;
+    out[ids[i]]=[Math.max(0,Math.min(1000,+v[0])),Math.max(0,Math.min(1000,+v[1]))];
+  }
+  return out;
+}
+var AIERR={
+  not_granted:'Вы не разрешили этой странице использовать Claude. Расставьте точки вручную.',
+  sampling_disabled:'Claude недоступен для этого аккаунта. Расставьте точки вручную.',
+  rate_limited:'Слишком много запросов или исчерпан лимит. Попробуйте позже.',
+  image_rejected:'Фото не подошло по формату или размеру. Выберите другое.',
+  images_unavailable:'В этом окне просмотра нельзя отправлять изображения. Расставьте точки вручную.',
+  refused:'Claude отказался обрабатывать это изображение. Расставьте точки вручную.',
+  invalid_json:'ИИ ответил в неожиданном формате. Нажмите ещё раз.',
+  session_expired:'Нужно заново войти в аккаунт.'
+};
+async function runAI(){
+  log('Нажата кнопка ИИ. Доступ='+!!sample+', режим='+mode+', занято='+aiBusy);
+  if(!sample||aiBusy||mode==='demo')return;
+  aiBusy=true;aiCtl=new AbortController();syncAi();msg('');
+  var hint=0,W=cv.width,H=cv.height,all=PTS.map(function(p){return p.id;});
+  var def=PTS.map(function(p){return p.id+' = '+p.name+': '+p.hint;}).join('\n');
+  try{
+    aiNote('Шаг 1 из 2: фото отправлено в Claude. Если появится окно с вопросом, нажмите «Разрешить». Ответ может идти до минуты.');
+    log('Шаг 1: отправляю фото в Claude');hint=setTimeout(function(){if(aiBusy)aiNote('Ответа пока нет. Если окно с вопросом не появлялось, приложение не даёт странице доступ к ИИ: откройте эту страницу на claude.ai в браузере.');},25000);
+    var b1=await blobOf(base);
+    if(!b1)throw {code:'image_rejected',message:'не удалось подготовить изображение'};
+    var p1='Ты помогаешь измерять пропорции лица по фотографии. Изображение: '+W+'×'+H+' пикселей. Нужно вернуть положения 21 антропометрической точки с максимально возможной точностью.\n'
+      +'Координаты: x и y в системе 0–1000, где (0,0) левый верхний угол изображения, а (1000,1000) правый нижний (x делится на ширину, y на высоту, независимо друг от друга). Слова «слева» и «справа» везде означают стороны ИЗОБРАЖЕНИЯ, а не лица человека: pupL это глаз в левой части кадра.\n'
+      +'Точки:\n'+def+'\n'
+      +'Ставь зрачок строго в центр зрачка, уголки глаз в самую внутреннюю и самую наружную точку глазной щели, смыкание губ на линии между губами, угол челюсти там, где контур нижней челюсти поворачивает вверх к уху.\n'
+      +'Если на фото нет одного лица анфас, лицо сильно повёрнуто или закрыто, верни {"face_ok":false,"reason":"коротко по-русски"}.\n'
+      +'Иначе верни только JSON без пояснений: {"face_ok":true,"points":{"hair":[x,y],"glab":[x,y], ... все 21 id ...}}';
+    var r1=await askJson(p1,{images:[b1],modelTier:'default',cache:false,signal:aiCtl.signal});
+    clearTimeout(hint);
+    log('Шаг 1: ответ получен');
+    if(!r1||r1.face_ok===false){msg('ИИ не нашёл подходящее лицо'+(r1&&r1.reason?': '+r1.reason:'.')+' Нужен один человек анфас. Можно расставить точки вручную.');aiNote('');return;}
+    var m1=readNorm(r1.points,all);
+    if(!m1){msg('ИИ вернул не все точки. Нажмите ещё раз или расставьте вручную.');aiNote('');return;}
+    var P=PTS.map(function(p){return {x:m1[p.id][0]/1000*W,y:m1[p.id][1]/1000*H};});
+    if(analyze(P).error){msg('ИИ перепутал точки местами. Нажмите ещё раз или расставьте вручную.');aiNote('');return;}
+    pts=P.map(function(p){return {x:p.x,y:p.y};});cur=N;mode='adjust';aim=null;update();
+
+    if(aiMax>=3){
+      aiNote('Шаг 2 из 2: ИИ уточняет глаза, нос, рот и подбородок по увеличенным кадрам. До двух минут.');
+      try{
+        var g=function(id){return P[IDX[id]];};
+        var ipd=Math.hypot(g('pupR').x-g('pupL').x,g('pupR').y-g('pupL').y);
+        var rect=function(x0,y0,x1,y1){x0=Math.max(0,x0);y0=Math.max(0,y0);x1=Math.min(W,x1);y1=Math.min(H,y1);return {x:x0,y:y0,w:Math.max(20,x1-x0),h:Math.max(20,y1-y0)};};
+        var eyesIds=['glab','pupL','pupR','medL','medR','latL','latR'];
+        var lowIds=['sub','alL','alR','mouL','mouR','ls','sto','li','men'];
+        var fullIds=['hair','zygL','zygR','goL','goR'];
+        var rE=rect(Math.min(g('latL').x,g('latR').x)-.35*ipd,g('glab').y-.45*ipd,Math.max(g('latL').x,g('latR').x)+.35*ipd,Math.max(g('pupL').y,g('pupR').y)+.55*ipd);
+        var rL=rect(Math.min(g('mouL').x,g('alL').x)-.5*ipd,g('sub').y-.35*ipd,Math.max(g('mouR').x,g('alR').x)+.5*ipd,g('men').y+.25*ipd);
+        var rF={x:0,y:0,w:W,h:H};
+        var cF=annotated(P,all,rF,1,13),cE=annotated(P,eyesIds,rE,Math.min(3,900/rE.w),14),cL=annotated(P,lowIds,rL,Math.min(3,900/rL.w),14);
+        var blobs=await Promise.all([blobOf(cF),blobOf(cE),blobOf(cL)]);
+        log('Шаг 2: отправляю три кадра для уточнения');
+        var p2='Ты проверяешь и уточняешь разметку точек лица. Три изображения, по порядку:\n'
+          +'1) всё фото целиком с текущими точками (кружки с подписями-id);\n'
+          +'2) увеличенный кадр глаз и межбровья;\n'
+          +'3) увеличенный кадр носа, рта и подбородка.\n'
+          +'Текущие точки могут сдвинуться на несколько пикселей от нужного места. Для каждой точки проверь, лежит ли центр кружка ровно там, где должна быть точка, и верни исправленное положение. Если положение верное, верни то же самое.\n'
+          +'Координаты у каждого изображения свои: x и y в системе 0–1000 относительно ширины и высоты ИМЕННО ЭТОГО изображения, (0,0) левый верхний угол. «Слева» и «справа» это стороны изображения.\n'
+          +'Определения точек:\n'+def+'\n'
+          +'Верни только JSON: {"eyes":{'+eyesIds.map(function(i){return '"'+i+'":[x,y]';}).join(',')+'},"lower":{'+lowIds.map(function(i){return '"'+i+'":[x,y]';}).join(',')+'},"full":{'+fullIds.map(function(i){return '"'+i+'":[x,y]';}).join(',')+'}}. Группа eyes относится к изображению 2, lower к изображению 3, full к изображению 1.';
+        var r2=await askJson(p2,{images:blobs,modelTier:'complex',cache:false,signal:aiCtl.signal});
+        var Q=P.map(function(p){return {x:p.x,y:p.y};});
+        var apply=function(group,ids,rc){
+          if(!group)return;
+          ids.forEach(function(id){
+            var v=group[id];if(!Array.isArray(v)||!isFinite(v[0])||!isFinite(v[1]))return;
+            var x=rc.x+Math.max(0,Math.min(1000,+v[0]))/1000*rc.w,y=rc.y+Math.max(0,Math.min(1000,+v[1]))/1000*rc.h,old=Q[IDX[id]];
+            if(Math.hypot(x-old.x,y-old.y)<=0.06*Math.max(W,H))Q[IDX[id]]={x:x,y:y};
+          });
+        };
+        apply(r2&&r2.eyes,eyesIds,rE);apply(r2&&r2.lower,lowIds,rL);apply(r2&&r2.full,fullIds,rF);
+        if(!analyze(Q).error){pts=Q;update();}
+      }catch(e2){
+        if(e2&&e2.code==='cancelled')throw e2;
+        aiNote('Шаг 2 не удался, оставлена первая расстановка.');
+        return;
+      }
+    }
+    aiNote('Готово. ИИ может ошибаться на несколько пикселей: проверьте точки через лупу и поправьте. Числа справа пересчитываются сразу.');
+  }catch(e){
+    var c=e&&e.code;
+    log('Ошибка ИИ: '+(c||'')+' '+((e&&e.message)||e));
+    if(c==='cancelled'){aiNote('Остановлено.');}
+    else{aiNote('');msg((AIERR[c]||'ИИ не ответил. Нажмите ещё раз или расставьте точки вручную.')+' Технически: '+(c||(e&&e.name)||'ошибка')+(e&&e.message?' — '+e.message:'')+'.');}
+  }finally{clearTimeout(hint);aiBusy=false;aiCtl=null;syncAi();}
+}
+$('aiBtn').addEventListener('click',runAI);
+$('meshBtn').addEventListener('click',runMesh);
+$('aiStop').addEventListener('click',function(){if(aiCtl)aiCtl.abort();});
+$('ovStop').addEventListener('click',function(){if(aiCtl)aiCtl.abort();});
+
+['file','cam'].forEach(function(id){
+  $(id).addEventListener('click',function(){log('Нажато: '+(id==='file'?'выбрать фото':'снять на камеру'));});
+  $(id).addEventListener('change',function(e){log('Событие выбора файла');var f=e.target.files&&e.target.files[0];loadFile(f);e.target.value='';});
+});
+document.addEventListener('paste',function(e){
+  var items=(e.clipboardData&&e.clipboardData.items)||[];
+  for(var i=0;i<items.length;i++){if(items[i].type&&items[i].type.indexOf('image/')===0){loadFile(items[i].getAsFile());e.preventDefault();return;}}
+});
+document.addEventListener('dragover',function(e){e.preventDefault();});
+document.addEventListener('drop',function(e){
+  e.preventDefault();
+  var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
+  if(f)loadFile(f);
+});
+$('undo').addEventListener('click',function(){
+  if(!pts.length)return;
+  pts.pop();cur=pts.length;mode='place';aim=null;meshAll=null;update();
+});
+$('reset').addEventListener('click',function(){pts=[];cur=0;mode='place';aim=null;meshAll=null;update();});
+try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){if(mode==='demo')update();});}catch(_){}
+new MutationObserver(function(){if(mode==='demo')update();}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+try{if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();}}catch(_){}
+update();
+})();
+</script>
+
+</body></html>
