@@ -1,6 +1,6 @@
 const ORIGIN = "https://ceemx-star.github.io";
 const TIERS = ["Sub-3", "Sub-5", "LTN", "MTN", "HTN", "Chadlite", "Chad", "Gigachad"];
-const MODEL = "claude-sonnet-5-5";
+const MODEL = "gemini-2.5-flash";
 const NORMS = [
   ["sym", "Симметрия, %", "96–100"],
   ["thirds", "Макс. отклонение третей лица от 33.3%, п.п.", "0–2"],
@@ -56,7 +56,7 @@ function num(v, lo, hi) {
 }
 
 async function evaluate(req, env) {
-  if (!env.ANTHROPIC_API_KEY) return json({ error: "no_key" }, 503);
+  if (!env.GEMINI_API_KEY) return json({ error: "no_key" }, 503);
   let b;
   try { b = await req.json(); } catch (e) { return json({ error: "bad_json" }, 400); }
   const uid = await checkInitData(b.initData, env.BOT_TOKEN);
@@ -84,15 +84,26 @@ async function evaluate(req, env) {
     'Верни только JSON: {"tier":"один из списка","why":"3-5 предложений по-русски: какие замеры решили оценку и почему","advice":["совет","совет"]}.';
   let r;
   try {
-    r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({ model: MODEL, max_tokens: 900, messages: [{ role: "user", content: prompt }] }),
-    });
+    r = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent",
+      {
+        method: "POST",
+        headers: { "x-goog-api-key": env.GEMINI_API_KEY, "content-type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: {
+            maxOutputTokens: 2000,
+            responseMimeType: "application/json",
+            thinkingConfig: { thinkingBudget: 0 },
+          },
+        }),
+      }
+    );
   } catch (e) { return json({ error: "upstream" }, 502); }
   if (!r.ok) return json({ error: "upstream_" + r.status }, 502);
   const d = await r.json();
-  const text = ((d.content || []).find((c) => c.type === "text") || {}).text || "";
+  const parts = (((d.candidates || [])[0] || {}).content || {}).parts || [];
+  const text = parts.map((x) => x.text || "").join("");
   const a = text.indexOf("{"), z = text.lastIndexOf("}");
   let o;
   try { o = JSON.parse(text.slice(a, z + 1)); } catch (e) { return json({ error: "bad_answer" }, 502); }
