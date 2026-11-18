@@ -176,20 +176,21 @@ var PTS=[
 ];
 var IDX={};PTS.forEach(function(p,i){IDX[p.id]=i;});
 var SPEC=[
- {id:'sym',name:'Симметрия',w:16,ideal:[96,100],tol:14,idealText:'96–100%',low:'есть асимметрия',high:'',note:'Насколько левая и правая половины лица зеркальны относительно осевой линии.'},
- {id:'thirds',name:'Вертикальные трети',w:12,ideal:[0,2],tol:10,idealText:'33 / 33 / 33',low:'',high:'трети неравны',note:'Лоб, середина лица и низ лица: каждая часть должна занимать около трети высоты.'},
- {id:'lower',name:'Нижняя треть',w:5,ideal:[1.8,2.4],tol:1.0,idealText:'1 : 2',low:'подбородок короткий',high:'подбородок длинный',note:'Основание носа до губ против губ до подбородка. Классический канон 1 к 2.'},
- {id:'canthal',name:'Кантальный наклон',w:12,ideal:[4,8],tol:8,idealText:'+4…+8°',low:'ниже нормы',high:'выше нормы',note:'Угол от внутреннего к внешнему уголку глаза. Плюс значит, что внешний уголок выше.'},
- {id:'fwhr',name:'fWHR',w:9,ideal:[1.75,2.05],tol:.45,idealText:'1.75–2.05',low:'лицо узкое',high:'лицо широкое',note:'Ширина скул к высоте от межбровья до верхней губы.'},
- {id:'jaw',name:'Челюсть к скулам',w:10,ideal:[.78,.86],tol:.2,idealText:'0.78–0.86',low:'челюсть узкая',high:'челюсть широкая',note:'Расстояние между углами челюсти к ширине скул.'},
- {id:'mid',name:'Середина лица',w:10,ideal:[.95,1.15],tol:.35,idealText:'0.95–1.15',low:'середина длинная',high:'середина короткая',note:'Расстояние между зрачками к расстоянию от зрачков до линии губ.'},
- {id:'eyes',name:'Межглазье',w:8,ideal:[.9,1.1],tol:.35,idealText:'0.9–1.1',low:'глаза близко',high:'глаза далеко',note:'Расстояние между внутренними уголками к ширине глаза (правило пяти глаз).'},
- {id:'nose',name:'Ширина носа',w:6,ideal:[.9,1.15],tol:.35,idealText:'0.9–1.15',low:'нос узкий',high:'нос широкий',note:'Ширина носа к расстоянию между внутренними уголками глаз.'},
- {id:'mouth',name:'Ширина рта',w:6,ideal:[1.4,1.7],tol:.5,idealText:'1.4–1.7',low:'рот узкий',high:'рот широкий',note:'Ширина рта к ширине носа.'},
- {id:'lips',name:'Губы',w:6,ideal:[1.3,1.8],tol:.8,idealText:'1.3–1.8',low:'нижняя тонкая',high:'нижняя полная',note:'Высота нижней губы к высоте верхней.'}
+ {id:'sym',name:'Симметрия',w:16,ideal:[96,100],tol:10,idealText:'96–100%',low:'есть асимметрия',high:'',note:'Насколько левая и правая половины лица зеркальны относительно осевой линии.'},
+ {id:'thirds',name:'Вертикальные трети',w:12,ideal:[0,2],tol:7,idealText:'33 / 33 / 33',low:'',high:'трети неравны',note:'Лоб, середина лица и низ лица: каждая часть должна занимать около трети высоты.'},
+ {id:'lower',name:'Нижняя треть',w:5,ideal:[1.8,2.4],tol:.7,idealText:'1 : 2',low:'подбородок короткий',high:'подбородок длинный',note:'Основание носа до губ против губ до подбородка. Классический канон 1 к 2.'},
+ {id:'canthal',name:'Кантальный наклон',w:12,ideal:[4,8],tol:6,idealText:'+4…+8°',low:'ниже нормы',high:'выше нормы',note:'Угол от внутреннего к внешнему уголку глаза. Плюс значит, что внешний уголок выше.'},
+ {id:'fwhr',name:'fWHR',w:9,ideal:[1.75,2.05],tol:.35,idealText:'1.75–2.05',low:'лицо узкое',high:'лицо широкое',note:'Ширина скул к высоте от межбровья до верхней губы.'},
+ {id:'jaw',name:'Челюсть к скулам',w:10,ideal:[.78,.86],tol:.12,idealText:'0.78–0.86',low:'челюсть узкая',high:'челюсть широкая',note:'Расстояние между углами челюсти к ширине скул.'},
+ {id:'wh',name:'Ширина лица к высоте',w:9,ideal:[.95,1.15],tol:.2,idealText:'0.95–1.15',low:'лицо узкое и вытянутое',high:'лицо широкое, округлое',note:'Ширина скул к высоте от межбровья до подбородка. Округлое, «полное» лицо даёт высокие значения.'},
+ {id:'mid',name:'Середина лица',w:10,ideal:[.95,1.15],tol:.25,idealText:'0.95–1.15',low:'середина длинная',high:'середина короткая',note:'Расстояние между зрачками к расстоянию от зрачков до линии губ.'},
+ {id:'eyes',name:'Межглазье',w:8,ideal:[.9,1.1],tol:.25,idealText:'0.9–1.1',low:'глаза близко',high:'глаза далеко',note:'Расстояние между внутренними уголками к ширине глаза (правило пяти глаз).'},
+ {id:'nose',name:'Ширина носа',w:6,ideal:[.9,1.15],tol:.25,idealText:'0.9–1.15',low:'нос узкий',high:'нос широкий',note:'Ширина носа к расстоянию между внутренними уголками глаз.'},
+ {id:'mouth',name:'Ширина рта',w:6,ideal:[1.4,1.7],tol:.35,idealText:'1.4–1.7',low:'рот узкий',high:'рот широкий',note:'Ширина рта к ширине носа.'},
+ {id:'lips',name:'Губы',w:6,ideal:[1.3,1.8],tol:.6,idealText:'1.3–1.8',low:'нижняя тонкая',high:'нижняя полная',note:'Высота нижней губы к высоте верхней.'}
 ];
-var TIERS=[[0,'Sub-5'],[38,'LTN'],[52,'MTN'],[64,'HTN'],[75,'Chadlite'],[86,'Chad'],[94,'Gigachad']];
-function scoreOf(v,ideal,tol){var d=v<ideal[0]?ideal[0]-v:(v>ideal[1]?v-ideal[1]:0);return d===0?100:Math.max(0,100*(1-d/tol));}
+var TIERS=[[0,'Sub-5'],[40,'LTN'],[55,'MTN'],[70,'HTN'],[80,'Chadlite'],[89,'Chad'],[95,'Gigachad']];
+function scoreOf(v,ideal,tol){var d=v<ideal[0]?ideal[0]-v:(v>ideal[1]?v-ideal[1]:0);return d===0?100:100*Math.pow(Math.max(0,1-d/tol),1.4);}
 function analyze(pts){
   var g=function(id){return pts[IDX[id]];};
   var a=g('pupL'),b=g('pupR');
@@ -214,14 +215,14 @@ function analyze(pts){
   var tl=Math.atan2(q.medL.y-q.latL.y,Math.abs(q.medL.x-q.latL.x))*180/Math.PI;
   var tr=Math.atan2(q.medR.y-q.latR.y,Math.abs(q.latR.x-q.medR.x))*180/Math.PI;
   var tilt=(tl+tr)/2;
-  var raw={sym:sym,thirds:dev,lower:ll/ul,canthal:tilt,fwhr:zw/uf,jaw:jw/zw,mid:ipd/pm,eyes:ic/ew,nose:aw/ic,mouth:mw/aw,lips:lo/up};
+  var raw={sym:sym,thirds:dev,lower:ll/ul,canthal:tilt,fwhr:zw/uf,jaw:jw/zw,mid:ipd/pm,eyes:ic/ew,nose:aw/ic,mouth:mw/aw,lips:lo/up,wh:zw/(t2+t3)};
   var disp={
     sym:sym.toFixed(1)+'%',
     thirds:Math.round(p1)+' / '+Math.round(p2)+' / '+Math.round(p3),
     lower:'1 : '+raw.lower.toFixed(1),
     canthal:(tilt>=0?'+':'')+tilt.toFixed(1)+'°',
     fwhr:raw.fwhr.toFixed(2),jaw:raw.jaw.toFixed(2),mid:raw.mid.toFixed(2),eyes:raw.eyes.toFixed(2),
-    nose:raw.nose.toFixed(2),mouth:raw.mouth.toFixed(2),lips:raw.lips.toFixed(2)
+    nose:raw.nose.toFixed(2),mouth:raw.mouth.toFixed(2),lips:raw.lips.toFixed(2),wh:raw.wh.toFixed(2)
   };
   var items=[],sw=0,acc=0;
   SPEC.forEach(function(sp){
@@ -260,11 +261,25 @@ function meshSymmetry(){
   });
   return {score:Math.max(0,Math.min(100,100*(1-4*sum/SYMP.length))),list:list};
 }
+function qualityIssues(){
+  var out=[];
+  if(!meshAll||mode==='demo')return out;
+  var M=meshAll,d=function(a,b){return Math.hypot(M[a].x-M[b].x,M[a].y-M[b].y);};
+  var ear=(d(159,145)/d(33,133)+d(386,374)/d(362,263))/2;
+  if(ear<0.18)out.push('глаза прикрыты или зажмурены: зрачки и кантальный наклон считаются неверно');
+  var xs=M.map(function(p){return p.x;}),ys=M.map(function(p){return p.y;});
+  var fw=(Math.max.apply(null,xs)-Math.min.apply(null,xs))/base.width,fh=(Math.max.apply(null,ys)-Math.min.apply(null,ys))/base.height;
+  if(fw>0.78||fh>0.85)out.push('лицо снято слишком близко и крупно: широкоугольная камера искажает пропорции, снимайте с 1,5–2 м и приближайте');
+  if(d(13,14)/d(61,291)>0.12)out.push('рот открыт');
+  var dx=Math.abs(M[1].x-(M[234].x+M[454].x)/2)/Math.abs(M[454].x-M[234].x);
+  if(dx>0.12)out.push('голова повёрнута: нужен снимок строго анфас');
+  return out;
+}
 function downloadPng(){
   var R=analyze(currentPoints());if(R.error)return;
   var W=cv.width,H=cv.height,bar=Math.round(W*0.16),c=document.createElement('canvas');c.width=W;c.height=H+bar;
   var g=c.getContext('2d');g.drawImage(cv,0,0);g.fillStyle='#0A0A0B';g.fillRect(0,H,W,bar);
-  g.fillStyle='#F6EEDA';g.font='800 '+Math.round(bar*.42)+'px sans-serif';g.fillText(R.tier+' · '+Math.round(R.overall)+'/100',W*.04,H+bar*.55);
+  g.fillStyle='#F6EEDA';g.font='800 '+Math.round(bar*.42)+'px sans-serif';g.fillText((qualityIssues().length?'—':R.tier)+' · '+Math.round(R.overall)+'/100',W*.04,H+bar*.55);
   g.fillStyle='#A89F88';g.font='500 '+Math.round(bar*.2)+'px sans-serif';g.fillText('≈ PSL '+R.psl.toFixed(1)+' · Фейсметр 10',W*.04,H+bar*.85);
   c.toBlob(function(b){var u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='facemeter.png';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},2000);log('Картинка результата сохранена');},'image/png');
 }
@@ -444,7 +459,7 @@ var lastText='';
 function renderResults(){
   var el=$('results'),P=currentPoints();
   if(P.length<N){
-    el.innerHTML='<div class="sec"><div class="eyebrow">Результат</div><h2>Поставлено '+P.length+' из '+N+' точек</h2><p class="hint" style="color:var(--muted)">Когда отметите все точки, здесь появятся 11 замеров и общий балл.</p></div>';
+    el.innerHTML='<div class="sec"><div class="eyebrow">Результат</div><h2>Поставлено '+P.length+' из '+N+' точек</h2><p class="hint" style="color:var(--muted)">Когда отметите все точки, здесь появятся 12 замеров и общий балл.</p></div>';
     lastText='';return;
   }
   var R=analyze(P);
@@ -453,8 +468,10 @@ function renderResults(){
   var legend=TIERS.map(function(t){return t[1]===R.tier?'<b>'+t[1]+'</b>':'<span>'+t[1]+'</span>';}).join('<span>·</span>');
   var weak=R.items.filter(function(i){return i.score<100;}).sort(function(a,b){return b.spec.w*(100-b.score)-a.spec.w*(100-a.score);}).slice(0,3);
   var strong=R.items.filter(function(i){return i.score>=100;}).map(function(i){return i.spec.name;});
-  var h='<div class="score"><div class="scoreTop"><div><div class="eyebrow">Оценка пропорций</div><div class="ring" style="--p:'+score+'"><span>'+score+'</span></div></div><div class="tier"><b>'+R.tier+'</b><span>≈ PSL '+R.psl.toFixed(1)+' · перевод приблизительный</span></div></div>';
+  var QI=qualityIssues();
+  var h='<div class="score"><div class="scoreTop"><div><div class="eyebrow">Оценка пропорций</div><div class="ring" style="--p:'+score+'"><span>'+score+'</span></div></div><div class="tier"><b>'+(QI.length?'—':R.tier)+'</b><span>'+(QI.length?'фото не подходит для оценки':'≈ PSL '+R.psl.toFixed(1)+' · перевод приблизительный')+'</span></div></div>';
   h+='<div class="meter"><i style="left:'+Math.max(2,Math.min(98,R.overall))+'%"></i></div><div class="legend">'+legend+'</div>';
+  if(QI.length)h+='<div class="err">Проблемы со снимком:<ul class="tips">'+QI.map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul><p style="font-weight:500;color:var(--muted);font-size:13px;margin-top:6px">Тир не показываю: числа ниже при таком фото недостоверны. Переснимите.</p></div>';
   if(mode==='demo')h+='<p class="demo-note">Это пример на схематичном шаблоне, а не оценка человека. Загрузите своё фото, чтобы получить свои числа.</p>';
   h+='</div>';
   h+='<div class="sec"><h2>Что тянет балл вниз</h2>';
