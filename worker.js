@@ -102,9 +102,9 @@ async function evaluate(req, env) {
   for (const m of list) {
     try {
       r = await call(m, true);
-      if (!r.ok && r.status !== 404 && r.status !== 429) r = await call(m, false);
+      if (!r.ok && r.status !== 404) r = await call(m, false);
     } catch (e) { return json({ error: "upstream" }, 502); }
-    if (r.status !== 404) break;
+    if (r.ok) break;
   }
   if (!r || !r.ok) return json({ error: "upstream_" + (r ? r.status : 0) }, 502);
   const d = await r.json();
