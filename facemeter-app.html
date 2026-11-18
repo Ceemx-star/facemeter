@@ -1,7 +1,7 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Фейсметр 10</title>
+<title>Фейсметр 11</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous" async></script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -104,13 +104,55 @@ body[data-step="1"] .st1 b,body[data-step="2"] .st2 b,body[data-step="3"] .st3 b
 .log pre{margin:0 0 10px;max-height:220px;overflow:auto;background:var(--field);border-radius:12px;padding:10px 12px;font:12px/1.5 var(--font-mono);white-space:pre-wrap;word-break:break-word;color:var(--ink)}
 .foot{margin-top:24px;color:var(--muted);font-size:13px;max-width:80ch;display:flex;flex-direction:column;gap:6px}
 @media (prefers-reduced-motion:no-preference){.prog i,.meter i,.row .tr i{transition:width .25s ease,left .25s ease}}
+
+/* ---- Плавность и анимации ---- */
+:root{--ease:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.56,.64,1)}
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+.tip{background:var(--field);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.tip b{font-size:14px}.tip p{font-size:13.5px;color:var(--muted);line-height:1.5}
+.tip .tag{font:500 10.5px var(--font-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--hot)}
+.tips2{display:flex;flex-direction:column;gap:8px;list-style:none;margin:0;padding:0}
+.srcs summary{cursor:pointer;color:var(--muted);font-size:13px;font-weight:600}
+.srcs ul{margin:8px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
+.srcs a{color:var(--hot)}
+.scan{position:absolute;left:0;right:0;top:0;height:22%;pointer-events:none;z-index:3;background:linear-gradient(180deg,transparent,rgba(212,175,55,.32));border-bottom:2px solid rgba(245,215,122,.9)}
+@keyframes rise{from{opacity:0;transform:translate3d(0,14px,0)}to{opacity:1;transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes mv{from{left:2%}}
+@keyframes pop{from{opacity:0;transform:scale(.94) translate3d(0,8px,0)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes photoIn{from{opacity:0;transform:scale(1.045)}to{opacity:1;transform:none}}
+@keyframes glow{0%{box-shadow:0 0 0 rgba(212,175,55,0)}40%{box-shadow:0 0 38px rgba(212,175,55,.5)}100%{box-shadow:0 0 0 rgba(212,175,55,0)}}
+@keyframes sheen{0%{filter:brightness(2.4)}100%{filter:none}}
+@keyframes scan{from{transform:translate3d(0,0,0)}to{transform:translate3d(0,360%,0)}}
+@media (prefers-reduced-motion:no-preference){
+  header>*{animation:rise .75s var(--ease) both}
+  header .eyebrow{animation-delay:.02s}header h1{animation:rise .75s var(--ease) .08s both,sheen 1.9s ease .25s both}header .steps{animation-delay:.16s}
+  .col>*{animation:rise .75s var(--ease) both}
+  .col>*:nth-child(2){animation-delay:.07s}.col>*:nth-child(3){animation-delay:.14s}
+  .btn{transition:transform .35s var(--ease),background-color .25s,border-color .25s,opacity .25s}
+  .btn:active{transform:scale(.95)}
+  .st{transition:color .3s,border-color .3s}.st b{transition:background-color .3s,color .3s}
+  .prompt .txt,.prompt svg{animation:fade .35s ease both}
+  .enter>*{animation:rise .7s var(--ease) both}
+  .enter>*:nth-child(1){animation-delay:0.38s}.enter>*:nth-child(2){animation-delay:0.45s}.enter>*:nth-child(3){animation-delay:0.52s}.enter>*:nth-child(4){animation-delay:0.59s}.enter>*:nth-child(5){animation-delay:0.66s}.enter>*:nth-child(6){animation-delay:0.73s}.enter>*:nth-child(7){animation-delay:0.80s}.enter>*:nth-child(8){animation-delay:0.87s}
+  .enter .row .tr i{transform-origin:left;animation:grow 1.1s var(--ease) .8s both}
+  .enter .meter i{animation:mv 1.1s var(--ease) .75s both}
+  .pop{animation:pop .55s var(--spring) both}
+  .flash{animation:photoIn .75s var(--ease) both}
+  .enter .tier b{animation:pop .8s var(--spring) .7s both}
+  .enter .ring{animation:glow 1.8s ease .45s both}
+  .enter .legend{animation:fade .8s ease .9s both}
+  .scan{animation:scan 1.7s ease-in-out infinite alternate}
+  .prog i,.meter i,.row .tr i{transition:width .45s var(--ease),left .45s var(--ease)}
+}
+@media (prefers-reduced-motion:reduce){.scan{display:none}}
 </style>
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">Лукс-анализ лица · шкала PSL <span class="chip">версия 10 · 468 точек</span></div>
+    <div class="eyebrow">Лукс-анализ лица · шкала PSL <span class="chip">версия 11 · 468 точек</span></div>
     <h1>Фейсметр</h1>
-    <p class="lead">Загрузите фото анфас: нейросеть Face Mesh сама ставит 468 точек на лице и считает пропорции: симметрию, трети, кантальный наклон, fWHR, челюсть, середину лица. Модель работает прямо в браузере, фото никуда не уходит. 21 ключевую точку для замеров можно поправить вручную. Кнопка «Расставить точки с ИИ (Claude)» остаётся запасным вариантом.</p>
     <ol class="steps"><li class="st st1"><b>1</b>Фото</li><li class="st st2"><b>2</b>Точки</li><li class="st st3"><b>3</b>Результат</li></ol>
   </header>
 
@@ -118,6 +160,7 @@ body[data-step="1"] .st1 b,body[data-step="2"] .st2 b,body[data-step="3"] .st3 b
     <section class="col">
       <div class="panel prompt" id="prompt"></div>
       <div class="stage">
+        <div class="scan" id="scan" hidden></div>
         <canvas class="main locked" id="cv" width="600" height="780" aria-label="Фото с отмеченными точками"></canvas>
         <div class="loupe" id="loupe" hidden><canvas id="lc" width="128" height="128"></canvas><span id="ll"></span></div>
         <div class="badge" id="badge">Пример на схеме</div>
@@ -134,19 +177,12 @@ body[data-step="1"] .st1 b,body[data-step="2"] .st2 b,body[data-step="3"] .st3 b
       </div>
       <p class="err" id="msg" hidden></p>
       <p class="hint2" id="aiMsg" hidden></p>
-      <p class="hint2">Если выбор файла не открывается, вставьте фото из буфера (Ctrl+V) или перетащите файл на страницу.</p>
     </section>
 
     <section class="col">
       <div class="panel" id="results"></div>
     </section>
   </main>
-
-  <footer class="foot">
-    <p>Что это измеряет: пропорции лица на одном снимке. Шкала PSL родилась на форумах и не является научной, поэтому перевод баллов в «тиры» здесь приблизительный. Точность замеров упирается в точность точек и в снимок: ракурс, свет, дистанция камеры и мимика меняют числа.</p>
-    <p>Автоматическая расстановка: MediaPipe Face Mesh, 468 точек лица. Это специальная нейросеть, она точнее Claude по картинке, но «идеально» не бывает: линия роста волос в сетке не размечена (берётся верх лба по сетке), а на поворотах головы, в очках, при бороде или тени точки смещаются. Проверьте ключевые точки лупой.</p>
-    <p>Это не оценка человека. Числа описывают геометрию, а не то, как выглядит живое лицо.</p>
-  </footer>
 </div>
 
 <script>
@@ -189,7 +225,23 @@ var SPEC=[
  {id:'mouth',name:'Ширина рта',w:6,ideal:[1.4,1.7],tol:.35,idealText:'1.4–1.7',low:'рот узкий',high:'рот широкий',note:'Ширина рта к ширине носа.'},
  {id:'lips',name:'Губы',w:6,ideal:[1.3,1.8],tol:.6,idealText:'1.3–1.8',low:'нижняя тонкая',high:'нижняя полная',note:'Высота нижней губы к высоте верхней.'}
 ];
-var TIERS=[[0,'Sub-5'],[40,'LTN'],[55,'MTN'],[70,'HTN'],[80,'Chadlite'],[89,'Chad'],[95,'Gigachad']];
+var TIERS=[[0,'Sub-3'],[25,'Sub-5'],[40,'LTN'],[55,'MTN'],[70,'HTN'],[80,'Chadlite'],[89,'Chad'],[95,'Gigachad']];
+var PLAIN={
+ sym:{ok:'Левая и правая половины лица почти зеркальны.',low:'Левая и правая половины заметно отличаются.'},
+ thirds:{ok:'Лоб, середина и низ лица примерно равны.',high:'Одна из трёх частей лица заметно больше или меньше других.'},
+ lower:{ok:'Подбородок в классической пропорции к губам.',low:'Подбородок короткий по сравнению с расстоянием до губ.',high:'Подбородок длинный по сравнению с расстоянием до губ.'},
+ canthal:{ok:'Внешние уголки глаз чуть выше внутренних: глаза выглядят приподнятыми.',low:'Внешние уголки глаз ниже нормы: взгляд кажется опущенным.',high:'Внешние уголки глаз сильно приподняты.'},
+ fwhr:{ok:'Лицо в среднем диапазоне по ширине.',low:'Лицо узкое относительно высоты.',high:'Лицо очень широкое относительно высоты.'},
+ jaw:{ok:'Ширина челюсти в норме относительно скул.',low:'Челюсть узкая относительно скул.',high:'Челюсть почти такая же широкая, как скулы, или шире.'},
+ wh:{ok:'Ширина лица к высоте в норме.',low:'Лицо узкое и вытянутое.',high:'Лицо широкое и округлое.'},
+ mid:{ok:'Середина лица в норме.',low:'Середина лица длиннее нормы.',high:'Середина лица короче нормы.'},
+ eyes:{ok:'Расстояние между глазами в норме.',low:'Глаза посажены близко.',high:'Глаза посажены далеко друг от друга.'},
+ nose:{ok:'Ширина носа в норме.',low:'Нос узкий.',high:'Нос широкий относительно расстояния между глазами.'},
+ mouth:{ok:'Ширина рта в норме относительно носа.',low:'Рот узкий относительно носа.',high:'Рот широкий относительно носа.'},
+ lips:{ok:'Нижняя и верхняя губа в нормальном соотношении.',low:'Нижняя губа тоньше нормы.',high:'Нижняя губа заметно полнее верхней.'}
+};
+function s10(x){return Math.round(x/10);}
+function tierIdx(o){var k=0;TIERS.forEach(function(t,i){if(o>=t[0])k=i;});return k;}
 function scoreOf(v,ideal,tol){var d=v<ideal[0]?ideal[0]-v:(v>ideal[1]?v-ideal[1]:0);return d===0?100:100*Math.pow(Math.max(0,1-d/tol),1.4);}
 function analyze(pts){
   var g=function(id){return pts[IDX[id]];};
@@ -246,7 +298,7 @@ log('Страница версии 9 запущена. Face Mesh: '+(typeof Face
 var cv=$('cv'),ctx=cv.getContext('2d'),base=document.createElement('canvas'),bctx=base.getContext('2d');
 var lp=$('loupe'),lc=$('lc'),lctx=lc.getContext('2d');
 var N=PTS.length,mode='demo',pts=[],cur=0,aim=null,drag=-1,pressed=false,raf=0;
-var meshAll=null,meshBusy=false,fm=null,pendingRes=null,meshOn=true;
+var anim=false,reveal=1,keyT0=-1,animRaf=0,meshToken=0,meshQueued=false,meshStale=false,curR=null,curQI=[],animNext=false,meshDirty=false,meshLayer=null,rafR=0,verdict=null,verdictBusy=false,meshAll=null,meshBusy=false,fm=null,pendingRes=null,meshOn=true;
 var SYMP=[[33,263],[133,362],[159,386],[145,374],[234,454],[172,397],[132,361],[58,288],[61,291],[129,358],[70,300],[105,334],[46,276],[93,323],[136,365],[150,379],[176,400],[148,377],[21,251],[54,284],[103,332],[67,297],[109,338],[127,356]];
 var MIDP=[10,9,168,6,1,2,152];
 function meshSymmetry(){
@@ -279,7 +331,7 @@ function downloadPng(){
   var R=analyze(currentPoints());if(R.error)return;
   var W=cv.width,H=cv.height,bar=Math.round(W*0.16),c=document.createElement('canvas');c.width=W;c.height=H+bar;
   var g=c.getContext('2d');g.drawImage(cv,0,0);g.fillStyle='#0A0A0B';g.fillRect(0,H,W,bar);
-  g.fillStyle='#F6EEDA';g.font='800 '+Math.round(bar*.42)+'px sans-serif';g.fillText((qualityIssues().length?'—':R.tier)+' · '+Math.round(R.overall)+'/100',W*.04,H+bar*.55);
+  g.fillStyle='#F6EEDA';g.font='800 '+Math.round(bar*.42)+'px sans-serif';g.fillText((qualityIssues().length?'—':R.tier)+' · '+(R.overall/10).toFixed(1)+'/10',W*.04,H+bar*.55);
   g.fillStyle='#A89F88';g.font='500 '+Math.round(bar*.2)+'px sans-serif';g.fillText('≈ PSL '+R.psl.toFixed(1)+' · Фейсметр 10',W*.04,H+bar*.85);
   c.toBlob(function(b){var u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='facemeter.png';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},2000);log('Картинка результата сохранена');},'image/png');
 }
@@ -320,10 +372,10 @@ function loadFile(f){
     var im=new Image();
     im.onerror=function(){log('Ошибка: браузер не смог открыть изображение');msg('Не удалось открыть изображение. Если это HEIC с iPhone, сделайте скриншот фото или снимите через «Снять на камеру».');};
     im.onload=function(){
-      var sc=Math.min(1,1100/Math.max(im.naturalWidth,im.naturalHeight));
+      var sc=Math.min(1,1000/Math.max(im.naturalWidth,im.naturalHeight));
       var W=Math.max(1,Math.round(im.naturalWidth*sc)),H=Math.max(1,Math.round(im.naturalHeight*sc));
       base.width=W;base.height=H;bctx.drawImage(im,0,0,W,H);
-      cv.width=W;cv.height=H;pts=[];cur=0;aim=null;meshAll=null;mode='place';log('Фото открыто: '+W+'×'+H+'. Режим расстановки точек.');update();
+      cv.width=W;cv.height=H;pts=[];cur=0;aim=null;meshAll=null;meshLayer=null;verdict=null;meshToken++;meshStale=true;anim=false;cancelAnimationFrame(animRaf);cv.classList.remove('flash');void cv.offsetWidth;cv.classList.add('flash');mode='place';log('Фото открыто: '+W+'×'+H+'. Режим расстановки точек.');update();
       setTimeout(function(){runMesh();},60);
     };
     im.src=r.result;
@@ -333,29 +385,56 @@ function loadFile(f){
 
 function currentPoints(){return mode==='demo'?demoPoints():pts;}
 
+function buildMeshLayer(){
+  meshLayer=document.createElement('canvas');meshLayer.width=cv.width;meshLayer.height=cv.height;meshDirty=false;
+  var g=meshLayer.getContext('2d');
+  if(typeof FACEMESH_TESSELATION!=='undefined'){
+    g.beginPath();
+    FACEMESH_TESSELATION.forEach(function(e){var a=meshAll[e[0]],b=meshAll[e[1]];if(a&&b){g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);}});
+    g.strokeStyle='rgba(212,175,55,.38)';g.lineWidth=Math.max(.5,cv.width/1400);g.stroke();
+  }
+  var dr=Math.max(.9,cv.width/700);g.fillStyle='rgba(255,255,255,.85)';
+  g.beginPath();meshAll.forEach(function(p){g.moveTo(p.x+dr,p.y);g.arc(p.x,p.y,dr,0,6.2832);});g.fill();
+  var ms=meshSymmetry();
+  if(ms){
+    g.beginPath();
+    ms.list.slice().sort(function(a,b){return b.dev-a.dev;}).slice(0,5).forEach(function(e){if(e.dev<.015)return;var p=meshAll[e.a],q=meshAll[e.b];g.moveTo(p.x,p.y);g.lineTo(q.x,q.y);});
+    g.strokeStyle='rgba(255,107,129,.9)';g.lineWidth=Math.max(1.2,cv.width/500);g.stroke();
+  }
+}
+function startReveal(){
+  try{if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;}catch(_){}
+  anim=true;reveal=0;keyT0=0;cancelAnimationFrame(animRaf);
+  var t0=performance.now();
+  (function f(){
+    var now=performance.now();
+    if(reveal<1){reveal=Math.min(1,(now-t0)/1500);if(reveal>=1)keyT0=now;}
+    render();
+    if(reveal>=1&&now-keyT0>21*35+560){anim=false;render();return;}
+    animRaf=requestAnimationFrame(f);
+  })();
+}
+function scheduleRender(){if(rafR)return;rafR=requestAnimationFrame(function(){rafR=0;render();});}
+function hap(k){try{var h=Telegram.WebApp.HapticFeedback;if(!h)return;if(k==='ok')h.notificationOccurred('success');else if(k==='sel')h.selectionChanged();else h.impactOccurred(k||'light');}catch(_){}}
 function render(){
   ctx.clearRect(0,0,cv.width,cv.height);
   ctx.drawImage(base,0,0);
   if(meshAll&&meshOn&&mode!=='demo'){
-    ctx.save();
-    if(typeof FACEMESH_TESSELATION!=='undefined'){
-      ctx.beginPath();
-      FACEMESH_TESSELATION.forEach(function(e){var a=meshAll[e[0]],b=meshAll[e[1]];if(a&&b){ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);}});
-      ctx.strokeStyle='rgba(212,175,55,.38)';ctx.lineWidth=Math.max(.5,cv.width/1400);ctx.stroke();
-    }
-    var dr=Math.max(.9,cv.width/700);ctx.fillStyle='rgba(255,255,255,.85)';
-    meshAll.forEach(function(p){ctx.beginPath();ctx.arc(p.x,p.y,dr,0,6.2832);ctx.fill();});
-    var ms=meshSymmetry();
-    if(ms){
-      ctx.beginPath();
-      ms.list.slice().sort(function(a,b){return b.dev-a.dev;}).slice(0,5).forEach(function(e){if(e.dev<.015)return;var p=meshAll[e.a],q=meshAll[e.b];ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);});
-      ctx.strokeStyle='rgba(255,107,129,.9)';ctx.lineWidth=Math.max(1.2,cv.width/500);ctx.stroke();
-    }
-    ctx.restore();
+    if(meshDirty||!meshLayer||meshLayer.width!==cv.width||meshLayer.height!==cv.height)buildMeshLayer();
+    if(anim&&reveal<1){
+      var hs=Math.max(1,Math.round(cv.height*reveal));
+      ctx.drawImage(meshLayer,0,0,cv.width,hs,0,0,cv.width,hs);
+      var gr=ctx.createLinearGradient(0,hs-48,0,hs);gr.addColorStop(0,'rgba(245,215,122,0)');gr.addColorStop(1,'rgba(245,215,122,.45)');
+      ctx.fillStyle=gr;ctx.fillRect(0,hs-48,cv.width,48);ctx.fillStyle='rgba(255,241,184,.95)';ctx.fillRect(0,hs-1.5,cv.width,3);
+    }else ctx.drawImage(meshLayer,0,0);
   }
+  var nowT=performance.now(),ka=1;
+  if(anim)ka=reveal<1?0:Math.min(1,(nowT-keyT0)/500);
+  var ks=function(i){if(!anim)return 1;if(reveal<1)return 0;var k=Math.max(0,Math.min(1,(nowT-keyT0-i*35)/420)),c=k-1;return 1+2.70158*c*c*c+1.70158*c*c;};
   var P=currentPoints(),W=cv.width,H=cv.height,r=Math.max(3.5,W/170);
   var LINE='rgba(212,175,55,.9)',DOT='#F5D77A',INK='#11161C';
   if(P.length===N){
+    ctx.save();ctx.globalAlpha=ka;
     var a=P[IDX.pupL],b=P[IDX.pupR],th=Math.atan2(b.y-a.y,b.x-a.x),ux=Math.cos(th),uy=Math.sin(th),L=W+H;
     var ln=function(p,dx,dy,col,w,dash){ctx.beginPath();ctx.moveTo(p.x-dx*L,p.y-dy*L);ctx.lineTo(p.x+dx*L,p.y+dy*L);ctx.strokeStyle=col;ctx.lineWidth=w;ctx.setLineDash(dash||[]);ctx.stroke();ctx.setLineDash([]);};
     var sg=function(p,q,col,w){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle=col;ctx.lineWidth=w;ctx.stroke();};
@@ -368,10 +447,12 @@ function render(){
     sg(P[IDX.goL],P[IDX.goR],LINE,Math.max(1.2,W/600));
     sg(P[IDX.latL],P[IDX.medL],'#FFF1B8',Math.max(2,W/400));
     sg(P[IDX.latR],P[IDX.medR],'#FFF1B8',Math.max(2,W/400));
+    ctx.restore();
   }
   P.forEach(function(p,i){
-    ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fillStyle=(mode==='adjust'&&i===drag)?'#FF7A59':DOT;ctx.fill();
-    ctx.lineWidth=Math.max(1.5,r/3);ctx.strokeStyle=INK;ctx.stroke();
+    var rr=r*ks(i);if(rr<=0.2)return;
+    ctx.beginPath();ctx.arc(p.x,p.y,rr,0,Math.PI*2);ctx.fillStyle=(mode==='adjust'&&i===drag)?'#FF7A59':DOT;ctx.fill();
+    ctx.lineWidth=Math.max(1.5,rr/3);ctx.strokeStyle=INK;ctx.stroke();
   });
   if(mode==='place'&&aim){
     ctx.beginPath();ctx.moveTo(aim.x-r*3,aim.y);ctx.lineTo(aim.x+r*3,aim.y);ctx.moveTo(aim.x,aim.y-r*3);ctx.lineTo(aim.x,aim.y+r*3);
@@ -404,24 +485,24 @@ cv.addEventListener('pointerdown',function(e){
   else if(mode==='adjust'){
     var thr=30*cv.width/cv.getBoundingClientRect().width,best=-1,bd=1e9;
     pts.forEach(function(q,i){var d=Math.hypot(q.x-p.x,q.y-p.y);if(d<bd){bd=d;best=i;}});
-    if(best>=0&&bd<=thr){drag=best;pressed=true;pts[best]=p;showLoupe(p,PTS[best].name);render();scheduleResults();}
+    if(best>=0&&bd<=thr){drag=best;pressed=true;hap('sel');pts[best]=p;showLoupe(p,PTS[best].name);render();scheduleResults();}
   }
 });
 cv.addEventListener('pointermove',function(e){
   if(mode==='demo')return;
   var p=pos(e);
   if(mode==='place'){
-    if(pressed||e.pointerType==='mouse'){aim=p;showLoupe(p,PTS[cur].name);render();}
+    if(pressed||e.pointerType==='mouse'){aim=p;showLoupe(p,PTS[cur].name);scheduleRender();}
   }else if(mode==='adjust'&&pressed&&drag>=0){
-    pts[drag]=p;showLoupe(p,PTS[drag].name);render();scheduleResults();
+    pts[drag]=p;showLoupe(p,PTS[drag].name);scheduleRender();scheduleResults();
   }
 });
 function endPress(e,commit){
   if(mode==='place'){
-    if(pressed&&commit&&aim){pts.push({x:aim.x,y:aim.y});cur++;if(cur>=N){mode='adjust';}aim=null;hideLoupe();pressed=false;update();return;}
+    if(pressed&&commit&&aim){pts.push({x:aim.x,y:aim.y});cur++;if(cur>=N){mode='adjust';animNext=true;hap('ok');}else hap('light');aim=null;hideLoupe();pressed=false;update();return;}
     pressed=false;
   }else if(mode==='adjust'){
-    pressed=false;drag=-1;hideLoupe();render();renderResults();
+    var moved=drag>=0;pressed=false;drag=-1;if(moved){verdict=null;meshDirty=true;}hideLoupe();render();if(moved)renderResults();
   }
 }
 cv.addEventListener('pointerup',function(e){endPress(e,true);});
@@ -458,38 +539,63 @@ function cls(s){return s>=85?'good':(s>=60?'warn':'bad');}
 var lastText='';
 function renderResults(){
   var el=$('results'),P=currentPoints();
-  if(P.length<N){
+  var enter=animNext&&mode!=='demo';
+  if(P.length<N){el.className='panel';
     el.innerHTML='<div class="sec"><div class="eyebrow">Результат</div><h2>Поставлено '+P.length+' из '+N+' точек</h2><p class="hint" style="color:var(--muted)">Когда отметите все точки, здесь появятся 12 замеров и общий балл.</p></div>';
     lastText='';return;
   }
   var R=analyze(P);
-  if(R.error){el.innerHTML='<div class="sec"><div class="eyebrow">Результат</div><p class="err">'+esc(R.error)+'</p></div>';lastText='';return;}
-  var score=Math.round(R.overall);
+  if(R.error){el.className='panel';el.innerHTML='<div class="sec"><div class="eyebrow">Результат</div><p class="err">'+esc(R.error)+'</p></div>';lastText='';return;}
+  var score=Math.round(R.overall),total10=(R.overall/10).toFixed(1);
   var legend=TIERS.map(function(t){return t[1]===R.tier?'<b>'+t[1]+'</b>':'<span>'+t[1]+'</span>';}).join('<span>·</span>');
+  var sw=0;R.items.forEach(function(i){sw+=i.spec.w;});
+  var loss=R.items.map(function(i){return {i:i,lost:i.spec.w*(100-i.score)/sw,share:100*i.spec.w/sw};}).sort(function(a,b){return b.lost-a.lost;});
+  var totalLost=100-R.overall;
   var weak=R.items.filter(function(i){return i.score<100;}).sort(function(a,b){return b.spec.w*(100-b.score)-a.spec.w*(100-a.score);}).slice(0,3);
   var strong=R.items.filter(function(i){return i.score>=100;}).map(function(i){return i.spec.name;});
   var QI=qualityIssues();
-  var h='<div class="score"><div class="scoreTop"><div><div class="eyebrow">Оценка пропорций</div><div class="ring" style="--p:'+score+'"><span>'+score+'</span></div></div><div class="tier"><b>'+(QI.length?'—':R.tier)+'</b><span>'+(QI.length?'фото не подходит для оценки':'≈ PSL '+R.psl.toFixed(1)+' · перевод приблизительный')+'</span></div></div>';
+  var h='<div class="score"><div class="scoreTop"><div><div class="eyebrow">Оценка по сетке, из 10</div><div class="ring" style="--p:'+score+'"><span>'+total10+'</span></div></div><div class="tier"><b>'+(QI.length?'—':R.tier)+'</b><span>'+(QI.length?'фото не подходит для оценки':'≈ PSL '+R.psl.toFixed(1)+' · '+R.overall.toFixed(1)+'/100 · перевод приблизительный')+'</span></div></div>';
   h+='<div class="meter"><i style="left:'+Math.max(2,Math.min(98,R.overall))+'%"></i></div><div class="legend">'+legend+'</div>';
   if(QI.length)h+='<div class="err">Проблемы со снимком:<ul class="tips">'+QI.map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul><p style="font-weight:500;color:var(--muted);font-size:13px;margin-top:6px">Тир не показываю: числа ниже при таком фото недостоверны. Переснимите.</p></div>';
   if(mode==='demo')h+='<p class="demo-note">Это пример на схематичном шаблоне, а не оценка человека. Загрузите своё фото, чтобы получить свои числа.</p>';
   h+='</div>';
+  var ti=tierIdx(R.overall),lo=TIERS[ti][0],hi=ti<TIERS.length-1?TIERS[ti+1][0]:100;
+  var why='<div class="sec"><h2>Как определён тир</h2><p class="hint" style="color:var(--muted)">Первая оценка идёт по сетке: берутся '+R.items.length+' замеров, у каждого своя оценка от 0 до 10 и свой вес. Из них собирается общий балл, а он попадает в один из диапазонов.</p>';
+  if(QI.length){why+='<p class="err">Тир не определён: снимок не подходит (причины выше).</p>';}
+  else{
+    why+='<p>Итог: <b>'+total10+' из 10</b> ('+R.overall.toFixed(1)+' из 100). Это диапазон <b>'+R.tier+'</b> ('+lo+'–'+hi+' из 100).</p>';
+    if(ti<TIERS.length-1){var need=TIERS[ti+1][0]-R.overall;why+='<p>До '+TIERS[ti+1][1]+' не хватает '+need.toFixed(1)+' балла из 100. Сильнее всего это можно поправить через «'+loss[0].i.spec.name+'»: если довести его до нормы, прибавится '+loss[0].lost.toFixed(1)+'.</p>';}
+    else why+='<p>Это высший диапазон шкалы.</p>';
+    var tops=loss.filter(function(x){return x.lost>0.05;}).slice(0,3);
+    if(tops.length){var tl=tops.reduce(function(a,x){return a+x.lost;},0);why+='<p>Больше всего баллов отняли: '+tops.map(function(x){return '<b>'+x.i.spec.name+'</b> (−'+x.lost.toFixed(1)+')';}).join(', ')+'. Вместе это '+Math.round(100*tl/Math.max(0.1,totalLost))+'% всех потерь.</p>';}
+    var best=R.items.filter(function(i){return i.score>=100;}).map(function(i){return i.spec.name;});
+    if(best.length)why+='<p style="color:var(--muted)">Без потерь: '+best.join(', ')+'.</p>';
+  }
+  why+='<div class="legend" style="margin-top:4px">'+TIERS.map(function(t,k){var h2=k<TIERS.length-1?TIERS[k+1][0]:100;return (k===ti&&!QI.length?'<b>':'<span>')+t[1]+' '+t[0]+'–'+h2+(k===ti&&!QI.length?'</b>':'</span>');}).join('<span>·</span>')+'</div>';
+  why+='<div class="rows">'+loss.map(function(x){return '<div class="row"><span class="nm">'+x.i.spec.name+'</span><span class="val '+cls(x.i.score)+'">'+s10(x.i.score)+'/10</span><span class="meta"><span>вес '+Math.round(x.share)+'%</span><span>потеряно '+x.lost.toFixed(1)+' из '+x.share.toFixed(1)+'</span></span></div>';}).join('')+'</div>';
+  why+='<div id="vslot">'+verdictHtml(R,QI)+'</div>';
+  why+='</div>';
+  h+=why;
+  if(mode!=='demo')h+=adviceHtml(R,QI);
   h+='<div class="sec"><h2>Что тянет балл вниз</h2>';
-  if(weak.length){h+='<ul class="weak">'+weak.map(function(i){var w=i.dir==='low'?i.spec.low:(i.dir==='high'?i.spec.high:'');return '<li><b>'+i.spec.name+'</b><span class="'+cls(i.score)+'">'+i.d+'</span><em>норма '+i.spec.idealText+(w?' · '+w:'')+'</em></li>';}).join('')+'</ul>';}
+  if(weak.length){h+='<ul class="weak">'+weak.map(function(i){var w=i.dir==='low'?i.spec.low:(i.dir==='high'?i.spec.high:'');return '<li><b>'+i.spec.name+'</b><span class="'+cls(i.score)+'">'+i.d+' · '+s10(i.score)+'/10</span><em>норма '+i.spec.idealText+(w?' · '+w:'')+'</em></li>';}).join('')+'</ul>';}
   else h+='<p style="color:var(--muted)">Все замеры внутри эталонных диапазонов.</p>';
   if(strong.length)h+='<p style="color:var(--muted);font-size:13px">В норме: '+strong.join(', ')+'.</p>';
   h+='</div>';
   h+='<div class="sec"><h2>Все замеры</h2><div class="rows">';
   R.items.forEach(function(i){
     var c=cls(i.score),word=i.dir==='ok'?'в норме':(i.dir==='low'?(i.spec.low||'ниже нормы'):(i.spec.high||'выше нормы'));
-    h+='<div class="row"><span class="nm">'+i.spec.name+'</span><span class="val '+c+'">'+i.d+'</span><span class="note">'+i.spec.note+'</span><span class="meta"><span>норма '+i.spec.idealText+'</span><span class="'+c+'">'+word+' · '+Math.round(i.score)+'/100</span></span><span class="tr"><i class="fill-'+c+'" style="width:'+Math.round(i.score)+'%"></i></span></div>';
+    h+='<div class="row"><span class="nm">'+i.spec.name+'</span><span class="val '+c+'">'+i.d+'</span><span class="note">'+((PLAIN[i.spec.id]&&PLAIN[i.spec.id][i.dir])||i.spec.note)+' '+i.spec.note+'</span><span class="meta"><span>норма '+i.spec.idealText+' · вес '+Math.round(100*i.spec.w/sw)+'%</span><span class="'+c+'">'+word+' · '+s10(i.score)+' из 10</span></span><span class="tr"><i class="fill-'+c+'" style="width:'+Math.round(i.score)+'%"></i></span></div>';
   });
   var MS=meshSymmetry();
-  if(MS){var mc=cls(MS.score);h+='<div class="row"><span class="nm">Симметрия по сетке</span><span class="val '+mc+'">'+MS.score.toFixed(1)+'%</span><span class="note">Сравнение '+SYMP.length+' зеркальных пар точек сетки. Красные линии на фото показывают самые асимметричные пары. В общий балл не входит.</span><span class="tr"><i class="fill-'+mc+'" style="width:'+Math.round(MS.score)+'%"></i></span></div>';}
+  if(MS){var mc=cls(MS.score);h+='<div class="row"><span class="nm">Симметрия по сетке</span><span class="val '+mc+'">'+s10(MS.score)+' из 10</span><span class="note">Сравнивается '+SYMP.length+' зеркальных пар точек сетки: чем ближе к 10, тем симметричнее лицо. Красные линии на фото показывают самые асимметричные пары. В общий балл не входит.</span><span class="tr"><i class="fill-'+mc+'" style="width:'+Math.round(MS.score)+'%"></i></span></div>';}
   h+='</div></div>';
   if(mode!=='demo')h+='<div class="toolbar"><button class="btn" id="copy" type="button">Скопировать результат</button><button class="btn primary" id="dl" type="button">Скачать картинку</button>'+(meshAll?'<button class="btn" id="mtog" type="button">'+(meshOn?'Скрыть сетку':'Показать сетку')+'</button>':'')+'</div>';
+  el.className='panel'+(enter?' enter':'');animNext=false;
   el.innerHTML=h;
-  lastText='Фейсметр: '+score+'/100, '+R.tier+' (≈ PSL '+R.psl.toFixed(1)+')\n'+R.items.map(function(i){return i.spec.name+': '+i.d+' (норма '+i.spec.idealText+')';}).join('\n');
+  if(enter){var rg=el.querySelector('.ring');if(rg)countUp(rg,R.overall);hap('ok');}
+  lastText='Фейсметр: '+total10+'/10, '+(QI.length?'тир не определён':R.tier)+' (≈ PSL '+R.psl.toFixed(1)+')\n'+R.items.map(function(i){return i.spec.name+': '+i.d+', '+s10(i.score)+'/10 (норма '+i.spec.idealText+')';}).join('\n');
+  curR=R;curQI=QI;bindV();
   if($('dl'))$('dl').addEventListener('click',downloadPng);
   if($('mtog'))$('mtog').addEventListener('click',function(){meshOn=!meshOn;render();$('mtog').textContent=meshOn?'Скрыть сетку':'Показать сетку';});
   var cb=$('copy');
@@ -497,6 +603,76 @@ function renderResults(){
     var ok=function(){cb.textContent='Скопировано';setTimeout(function(){cb.textContent='Скопировать результат';},1500);};
     try{navigator.clipboard.writeText(lastText).then(ok,function(){selectFallback();});}catch(_){selectFallback();}
   });
+}
+var EVAL_URL='https://facemeter.scallymonlight.workers.dev/evaluate';
+function tgData(){try{return (window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData)||'';}catch(_){return '';}}
+function canVerdict(){return !!(sample||tgData());}
+async function runVerdict(R){
+  if(!canVerdict()||verdictBusy)return;
+  verdictBusy=true;paintVerdict();
+  try{
+    var ms=meshSymmetry(),raw={};
+    R.items.forEach(function(i){raw[i.spec.id]=i.v;});
+    if(sample){
+      var lines=R.items.map(function(i){return i.spec.name+': '+i.d+' (норма '+i.spec.idealText+'), оценка сетки '+s10(i.score)+'/10';}).join('\n');
+      var pr='Ты независимый эксперт по оценке пропорций лица по шкале looksmax-форумов (не научной). Другая программа поставила сетку из 468 точек и посчитала замеры. Ты видишь только числа.\n'+lines+(ms?'\nСимметрия по сетке: '+ms.score.toFixed(1)+'%':'')+'\nПравила-сетка дали '+R.overall.toFixed(1)+' из 100, тир '+R.tier+'.\nТиры от низшего: '+TIERS.map(function(t){return t[1];}).join(', ')+'.\nОцени сам, какому тиру соответствует это сочетание замеров, учитывая важность и сочетание замеров. Не подгоняй под тир сетки. Дай 3-4 коротких конкретных совета именно для этих замеров: уход, сон, питание в общих чертах, стрижка или борода, как переснять фото. Без экстремальных диет, калорий и цифр веса, без операций, лекарств и «костной ломки», без оскорблений; если нужна медицина, пиши «к врачу». Верни только JSON: {"tier":"один из списка","why":"3-5 предложений по-русски","advice":["совет","совет"]}.';
+      var r=await askJson(pr,{modelTier:'default',cache:false});
+      if(r&&r.tier&&r.why)verdict={tier:String(r.tier),why:String(r.why),advice:Array.isArray(r.advice)?r.advice.slice(0,4).map(String):[]};
+      else msg('ИИ ответил в неожиданном формате. Нажмите ещё раз.');
+    }else{
+      var resp=await fetch(EVAL_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({initData:tgData(),raw:raw,meshSym:ms?ms.score:null,gridOverall:R.overall,gridTier:R.tier})});
+      var d=await resp.json().catch(function(){return {};});
+      if(resp.ok&&d.tier&&d.why)verdict={tier:d.tier,why:d.why,advice:Array.isArray(d.advice)?d.advice.slice(0,4):[]};
+      else{
+        var E={no_key:'Оценщик ИИ ещё не подключён: в Cloudflare не добавлен ключ ANTHROPIC_API_KEY.',rate_limited:'Слишком много оценок за час, попробуйте позже.',unauthorized:'Не удалось подтвердить Telegram. Закройте и откройте Фейсметр заново.'};
+        msg(E[d.error]||('ИИ-оценщик не ответил'+(d.error?' ('+d.error+')':'')+'. Нажмите ещё раз.'));
+      }
+    }
+  }catch(e){msg('ИИ-оценщик недоступен: '+((e&&(e.message||e.code))||e));}
+  finally{verdictBusy=false;if(verdict)hap('ok');paintVerdict();}
+}
+function verdictHtml(R,QI){
+  var out='';
+  if(mode!=='demo'&&!QI.length){
+    if(verdict)out+='<div class="sec pop"><h2>Оценка ИИ-оценщика</h2><p><b>'+esc(verdict.tier)+'</b> · сетка дала <b>'+R.tier+'</b>'+(verdict.tier===R.tier?' · мнения совпали':'')+'</p><p style="color:var(--muted)">'+esc(verdict.why)+'</p>'+((verdict.advice&&verdict.advice.length)?'<h2 style="margin-top:6px">Советы ИИ именно по вашим замерам</h2><ul class="tips2">'+verdict.advice.map(function(t){return '<li class="tip"><span class="tag">ИИ</span><p>'+esc(t)+'</p></li>';}).join('')+'</ul>':'')+'</div>';
+    else if(canVerdict())out+='<button class="btn primary" id="vbtn" type="button"'+(verdictBusy?' disabled':'')+'>'+(verdictBusy?'ИИ-оценщик думает…':'Оценить ИИ-оценщиком')+'</button><p class="hint2">Второй ИИ получает только числа замеров по сетке, фото не отправляется.</p>';
+    else out+='<p class="hint2">ИИ-оценщик работает в Telegram-боте и внутри Claude. В обычном браузере тир считает только сетка.</p>';
+  }
+  return out;
+}
+function bindV(){if($('vbtn'))$('vbtn').addEventListener('click',function(){if(curR)runVerdict(curR);});}
+function paintVerdict(){var v=$('vslot');if(!v||!curR)return;v.innerHTML=verdictHtml(curR,curQI);bindV();}
+function countUp(rg,ov){
+  var sp=rg.querySelector('span'),t0=performance.now(),D=1000;
+  function f(t){var k=Math.min(1,(t-t0)/D),e=1-Math.pow(1-k,3),v=ov*e;rg.style.setProperty('--p',v.toFixed(1));sp.textContent=(v/10).toFixed(1);if(k<1)requestAnimationFrame(f);}
+  rg.style.setProperty('--p',0);sp.textContent='0.0';setTimeout(function(){t0=performance.now();requestAnimationFrame(f);},450);
+}
+function buildAdvice(R,QI){
+  var by={};R.items.forEach(function(i){by[i.spec.id]=i;});
+  var A=[];
+  function add(tag,title,text){A.push({tag:tag,title:title,text:text});}
+  if(QI.length)add('Практика','Сначала переснимите фото','Замеры на таком снимке недостоверны. Снимайте строго анфас, с расслабленным лицом и закрытым ртом, глаза открыты, камера на уровне глаз с расстояния 1,5–2 м (потом приблизьте), свет ровный и спереди, волосы убраны со лба.');
+  add('Исследование','Сон','Высыпайтесь, особенно перед съёмкой. В исследовании Каролинского института (BMJ, 2010) людей после недосыпа оценивали как менее привлекательных, менее здоровых и более уставших.');
+  add('Исследование','Овощи и фрукты','Больше овощей и фруктов каждый день. Каротиноиды из них придают коже более здоровый оттенок, и по обзору Уайтхед и др. (2012) цвет кожи меняется в течение нескольких недель.');
+  add('Рекомендации врачей','Соль, алкоголь, вода','Меньше соли, колбас и полуфабрикатов, меньше алкоголя вечером, достаточно воды. Избыток соли задерживает воду, и лицо, особенно вокруг глаз, выглядит отёчнее. Постоянные отёки лучше показать врачу.');
+  if((by.fwhr&&by.fwhr.dir==='high')||(by.wh&&by.wh.dir==='high')||(by.jaw&&by.jaw.dir==='high'))add('Исследование','Полнота лица','Лицо читается широким и округлым. Полнота лица связана с общим составом тела (Университет Торонто, 2015), а убрать жир только с лица упражнениями нельзя. Помогают сон, меньше соли и алкоголя. Если решите менять вес, делайте это постепенно и вместе с врачом или диетологом, а не ради фото.');
+  if((by.jaw&&by.jaw.dir==='low')||(by.lower&&by.lower.dir!=='ok')||(by.canthal&&by.canthal.dir==='low')||(by.eyes&&by.eyes.dir!=='ok'))add('Исследование','Что не меняется','Форму челюсти, скул и посадку глаз не изменить едой или упражнениями. «Мьюинг» (положение языка) не подтверждён исследованиями: Американская ассоциация ортодонтов говорит об отсутствии доказательств, а лишнее давление может ухудшить прикус. По прикусу и челюсти обращайтесь к ортодонту.');
+  if(by.sym&&by.sym.score<85)add('Практика','Асимметрия','На фото асимметрия часто появляется из-за наклона головы, камеры сбоку, мимики или тени. Переснимите строго анфас при ровном свете. Пробор и стрижка визуально выравнивают лицо.');
+  if(by.thirds&&by.thirds.score<85)add('Практика','Пропорции лица','Если лоб или низ лица выглядит крупнее остальных, стрижка (чёлка, объём сверху, длина по бокам) и форма бороды меняют пропорции визуально.');
+  if(by.canthal&&by.canthal.dir==='low')add('Практика','Взгляд','Кантальный наклон сильно зависит от мимики, света и угла камеры. Снимайтесь с расслабленным лицом, камера на уровне глаз. Аккуратно оформленные брови и отдохнувший вид делают взгляд светлее.');
+  return A;
+}
+function adviceHtml(R,QI){
+  var A=buildAdvice(R,QI);
+  var h='<div class="sec"><h2>Советы для вас</h2><ul class="tips2">'+A.map(function(a){return '<li class="tip"><span class="tag">'+a.tag+'</span><b>'+a.title+'</b><p>'+a.text+'</p></li>';}).join('')+'</ul>';
+  h+='<details class="srcs"><summary>Откуда советы</summary><ul>'
+    +'<li><a href="https://news.ki.se/a-good-nights-sleep-the-key-to-being-attractive" target="_blank" rel="noopener">Каролинский институт: сон и внешность</a></li>'
+    +'<li><a href="https://www.stir.ac.uk/research/hub/publication/1767588" target="_blank" rel="noopener">Whitehead и др., 2012: овощи, фрукты и цвет кожи</a></li>'
+    +'<li><a href="https://www.utoronto.ca/news/losing-weight-can-make-you-more-attractive-experts-say-–-theres-catch" target="_blank" rel="noopener">Университет Торонто, 2015: вес и внешний вид лица</a></li>'
+    +'<li><a href="https://www.discovermagazine.com/health/mewing-may-be-trendy-but-it-has-no-scientific-basis" target="_blank" rel="noopener">Discover: мьюинг и позиция ортодонтов</a></li>'
+    +'<li><a href="https://www.theweek.in/news/health/2025/03/29/is-facial-bloating-related-to-excess-salt-intake.html" target="_blank" rel="noopener">The Week: соль и отёчность лица</a></li>'
+    +'</ul></details>';
+  return h+'</div>';
 }
 function selectFallback(){
   var cb=$('copy');if(!cb)return;
@@ -524,6 +700,7 @@ function syncAi(){
   $('meshBtn').hidden=mode==='demo';
   $('meshBtn').disabled=aiBusy||meshBusy;
   $('meshBtn').textContent=meshBusy?'Face Mesh работает…':'Авто-расстановка (468 точек)';
+  $('scan').hidden=!(meshBusy||aiBusy);
   $('aiStop').hidden=!aiBusy;
   $('ov').hidden=!aiBusy;
   $('aiBtn').textContent=aiBusy?'ИИ работает…':'Расставить точки с ИИ (Claude)';
@@ -543,32 +720,44 @@ async function askJson(input,opts){
   var r=await sample(input,opts);
   return parseLoose(r.text);
 }
-var AI_OFF='Запасной вариант через Claude в этом окне недоступен. Основная авто-расстановка (Face Mesh, 468 точек) работает без него.';
+var AI_OFF='';
 
 /* ---- Основная авто-расстановка: MediaPipe Face Mesh, 468 (478 с радужками) точек ---- */
-function getMesh(){
-  if(fm)return fm;
+function getMesh(fresh){
   if(typeof FaceMesh==='undefined')return null;
+  if(fresh&&fm){try{fm.close();}catch(_){}fm=null;}
+  if(fm)return fm;
   fm=new FaceMesh({locateFile:function(f){return 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/'+f;}});
   fm.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:0.5,minTrackingConfidence:0.5,selfieMode:false});
   fm.onResults(function(r){if(pendingRes){var f=pendingRes;pendingRes=null;f(r);}});
   return fm;
 }
+function sendMesh(f,img){
+  return new Promise(function(resolve,reject){
+    var t=setTimeout(function(){pendingRes=null;reject({code:'timeout',message:'модель не ответила за 90 секунд'});},90000);
+    pendingRes=function(r){clearTimeout(t);resolve(r);};
+    f.send({image:img}).catch(function(e){clearTimeout(t);pendingRes=null;reject(e);});
+  });
+}
 async function runMesh(){
-  if(mode==='demo'||meshBusy||aiBusy)return;
-  var f=getMesh();
-  if(!f){log('Face Mesh: скрипт модели не загрузился');msg('Модель Face Mesh не загрузилась (нет доступа к cdn.jsdelivr.net). Попробуйте открыть страницу в браузере, используйте кнопку Claude или расставьте точки вручную.');return;}
+  if(mode==='demo'||aiBusy)return;
+  if(meshBusy){meshQueued=true;return;}
+  if(typeof FaceMesh==='undefined'){msg('Модель Face Mesh не загрузилась (нет доступа к cdn.jsdelivr.net). Откройте страницу ещё раз или расставьте точки вручную.');return;}
   meshBusy=true;syncAi();msg('');
+  var tok=meshToken;
   aiNote('Face Mesh ищет лицо и ставит 468 точек. Первый запуск скачивает модель, до 30 секунд.');
-  log('Face Mesh: запуск');
   try{
-    var res=await new Promise(function(resolve,reject){
-      var t=setTimeout(function(){pendingRes=null;reject({code:'timeout',message:'модель не ответила за 90 секунд'});},90000);
-      pendingRes=function(r){clearTimeout(t);resolve(r);};
-      f.send({image:base}).catch(function(e){clearTimeout(t);pendingRes=null;reject(e);});
-    });
-    var L=res&&res.multiFaceLandmarks&&res.multiFaceLandmarks[0];
-    if(!L||L.length<468){log('Face Mesh: лицо не найдено');msg('Лицо не найдено. Нужен один человек анфас, без сильного поворота и без закрытого лица. Можно расставить точки вручную.');aiNote('');return;}
+    var L=null;
+    for(var tr=0;tr<2&&!L;tr++){
+      var f=getMesh(tr>0||meshStale);meshStale=false;
+      if(!f)throw {code:'nomodel',message:'модель не загрузилась'};
+      var copy=document.createElement('canvas');copy.width=base.width;copy.height=base.height;copy.getContext('2d').drawImage(base,0,0);
+      var res=await sendMesh(f,copy);
+      if(tok!==meshToken)return;
+      var l=res&&res.multiFaceLandmarks&&res.multiFaceLandmarks[0];
+      if(l&&l.length>=468)L=l;
+    }
+    if(!L){msg('Лицо не найдено. Нужен один человек анфас, лицо целиком в кадре, без сильного поворота. Можно расставить точки вручную.');aiNote('');return;}
     var W=base.width,H=base.height;
     var M=L.map(function(l){return {x:l.x*W,y:l.y*H};});
     var mid=function(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};};
@@ -582,13 +771,13 @@ async function runMesh(){
       if(map[p[0]].x>map[p[1]].x){var t=map[p[0]];map[p[0]]=map[p[1]];map[p[1]]=t;}
     });
     var P=PTS.map(function(p){return {x:map[p.id].x,y:map[p.id].y};});
-    meshAll=M;pts=P;cur=N;mode='adjust';aim=null;update();
+    verdict=null;meshAll=M;meshDirty=true;pts=P;cur=N;mode='adjust';aim=null;animNext=true;hap('ok');startReveal();update();
     log('Face Mesh: готово, точек '+M.length);
+    setTimeout(function(){if(tok!==meshToken||pts.length<N)return;var Rr=analyze(pts);if(!Rr.error&&!qualityIssues().length)runVerdict(Rr);},50);
     aiNote('Готово: поставлено '+M.length+' точек сетки, 21 из них идёт в замеры. Линия роста волос берётся по верху сетки, проверьте её и остальные ключевые точки лупой.');
   }catch(e){
-    log('Face Mesh: ошибка '+((e&&(e.code||e.name))||'')+' '+((e&&e.message)||e));
-    aiNote('');msg('Face Mesh не отработал: '+((e&&e.message)||(e&&e.code)||e)+'. Нажмите «Авто-расстановка» ещё раз, попробуйте в браузере или расставьте точки вручную.');
-  }finally{meshBusy=false;syncAi();}
+    aiNote('');msg('Face Mesh не отработал: '+((e&&e.message)||(e&&e.code)||e)+'. Нажмите «Авто-расстановка» ещё раз или расставьте точки вручную.');
+  }finally{meshBusy=false;syncAi();if(meshQueued){meshQueued=false;setTimeout(runMesh,30);}}
 }
 function aiProbe(){
   try{
@@ -596,7 +785,7 @@ function aiProbe(){
     window.claude.use('sample').then(function(s){
       if(!s){log('ИИ недоступен: Claude не подключён к этому окну (sample=null)');aiNote(AI_OFF);return;}
       return s.limits().then(function(l){
-        if(l&&l.images){sample=s;aiMax=l.images.maxCount||1;log('ИИ доступен, изображений за запрос: '+aiMax);syncAi();aiNote('Расстановка с ИИ доступна: загрузите фото и нажмите «Расставить точки с ИИ».');}
+        if(l&&l.images){sample=s;aiMax=l.images.maxCount||1;log('ИИ доступен, изображений за запрос: '+aiMax);syncAi();renderResults();aiNote('');}
         else{log('ИИ недоступен: окно не принимает изображения');aiNote(AI_OFF);}
       },function(){aiNote(AI_OFF);});
     }).catch(function(){aiNote(AI_OFF);});
@@ -657,7 +846,7 @@ async function runAI(){
     if(!m1){msg('ИИ вернул не все точки. Нажмите ещё раз или расставьте вручную.');aiNote('');return;}
     var P=PTS.map(function(p){return {x:m1[p.id][0]/1000*W,y:m1[p.id][1]/1000*H};});
     if(analyze(P).error){msg('ИИ перепутал точки местами. Нажмите ещё раз или расставьте вручную.');aiNote('');return;}
-    pts=P.map(function(p){return {x:p.x,y:p.y};});cur=N;mode='adjust';aim=null;update();
+    pts=P.map(function(p){return {x:p.x,y:p.y};});cur=N;mode='adjust';aim=null;animNext=true;update();
 
     if(aiMax>=3){
       aiNote('Шаг 2 из 2: ИИ уточняет глаза, нос, рот и подбородок по увеличенным кадрам. До двух минут.');
@@ -735,7 +924,8 @@ $('reset').addEventListener('click',function(){pts=[];cur=0;mode='place';aim=nul
 try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){if(mode==='demo')update();});}catch(_){}
 new MutationObserver(function(){if(mode==='demo')update();}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 
-try{if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();}}catch(_){}
+try{var tw=window.Telegram&&Telegram.WebApp;if(tw){tw.ready();tw.expand();try{tw.setHeaderColor('#0A0A0B');tw.setBackgroundColor('#0A0A0B');}catch(_){}try{if(tw.disableVerticalSwipes)tw.disableVerticalSwipes();}catch(_){}}}catch(_){}
+document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{if(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.openLink){e.preventDefault();Telegram.WebApp.openLink(a.href);}}catch(_){}});
 update();
 })();
 </script>
