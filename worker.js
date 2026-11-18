@@ -1,6 +1,6 @@
 const ORIGIN = "https://ceemx-star.github.io";
 const TIERS = ["Sub-3", "Sub-5", "LTN", "MTN", "HTN", "Chadlite", "Chad", "Gigachad"];
-const MODEL = "gemini-2.5-flash";
+const MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-3-flash-preview"];
 const NORMS = [
   ["sym", "Симметрия, %", "96–100"],
   ["thirds", "Макс. отклонение третей лица от 33.3%, п.п.", "0–2"],
@@ -82,25 +82,22 @@ async function evaluate(req, env) {
     "Оцени сам, какому тиру соответствует это сочетание замеров. Учитывай, что важнее одни замеры (кантальный наклон, челюсть, fWHR, симметрия, середина лица), а как они сочетаются между собой. Не подгоняй под тир сетки, если считаешь иначе, но если измерения выглядят нереалистично (возможна ошибка расстановки точек), скажи об этом. " +
     "Затем дай 3-4 коротких конкретных совета именно для этих замеров: уход за кожей, сон, питание в общих чертах, стрижка или борода, как переснять фото. Без экстремальных диет, калорий и цифр веса, без операций, лекарств и «костной ломки», без оскорблений; если нужна медицина, пиши «к врачу». " +
     'Верни только JSON: {"tier":"один из списка","why":"3-5 предложений по-русски: какие замеры решили оценку и почему","advice":["совет","совет"]}.';
-  let r;
-  try {
-    r = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent",
-      {
-        method: "POST",
-        headers: { "x-goog-api-key": env.GEMINI_API_KEY, "content-type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: {
-            maxOutputTokens: 2000,
-            responseMimeType: "application/json",
-            thinkingConfig: { thinkingBudget: 0 },
-          },
-        }),
-      }
-    );
-  } catch (e) { return json({ error: "upstream" }, 502); }
-  if (!r.ok) return json({ error: "upstream_" + r.status }, 502);
+  const body = JSON.stringify({
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: { maxOutputTokens: 4000, responseMimeType: "application/json" },
+  });
+  const list = (env.GEMINI_MODEL ? [env.GEMINI_MODEL] : []).concat(MODELS);
+  let r = null;
+  for (const m of list) {
+    try {
+      r = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent",
+        { method: "POST", headers: { "x-goog-api-key": env.GEMINI_API_KEY, "content-type": "application/json" }, body }
+      );
+    } catch (e) { return json({ error: "upstream" }, 502); }
+    if (r.status !== 404) break;
+  }
+  if (!r || !r.ok) return json({ error: "upstream_" + (r ? r.status : 0) }, 502);
   const d = await r.json();
   const parts = (((d.candidates || [])[0] || {}).content || {}).parts || [];
   const text = parts.map((x) => x.text || "").join("");
