@@ -1,6 +1,6 @@
 const ORIGIN = "https://ceemx-star.github.io";
 const TIERS = ["Sub-3", "Sub-5", "LTN", "MTN", "HTN", "Chadlite", "Chad", "Gigachad"];
-const MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-3-flash-preview"];
+const MODELS = ["gemini-3.1-flash-lite", "gemini-2.5-flash-lite", "gemini-flash-lite-latest", "gemini-2.5-flash"];
 const NORMS = [
   ["sym", "Симметрия, %", "96–100"],
   ["thirds", "Макс. отклонение третей лица от 33.3%, п.п.", "0–2"],
@@ -84,7 +84,7 @@ async function evaluate(req, env) {
     'Верни только JSON: {"tier":"один из списка","why":"3-5 предложений по-русски: какие замеры решили оценку и почему","advice":["совет","совет"]}.';
   const body = JSON.stringify({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: { maxOutputTokens: 4000, responseMimeType: "application/json" },
+    generationConfig: { maxOutputTokens: 1500, responseMimeType: "application/json" },
   });
   const list = (env.GEMINI_MODEL ? [env.GEMINI_MODEL] : []).concat(MODELS);
   let r = null;
