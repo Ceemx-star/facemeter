@@ -136,8 +136,8 @@ export default {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           chat_id: m.chat.id,
-          text: "Фейсметр: загрузите фото анфас, нейросеть поставит 468 точек и посчитает пропорции лица. Разметка идёт на вашем телефоне; для ИИ-оценки в Google Gemini отправляется сжатая копия фото.",
-          reply_markup: { inline_keyboard: [[{ text: "Открыть Фейсметр", web_app: { url: env.WEBAPP_URL } }]] },
+          text: "Добро пожаловать 🔥\nЗагрузи фото анфас, и нейросеть поставит 468 точек на лицо, посчитает пропорции и определит твой тир: от Sub-3 до Gigachad. Ты получишь оценку, разбор по замерам и советы, что подтянуть.",
+          reply_markup: { inline_keyboard: [[{ text: "Открыть LuxMaxing", web_app: { url: env.WEBAPP_URL } }]] },
         }),
       });
     }
