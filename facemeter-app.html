@@ -1,6 +1,6 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Фейсметр</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script><script>window.FMU=(function(){try{var u=Telegram.WebApp.initDataUnsafe.user;return u&&u.id?u.id+":":""}catch(e){return ""}})();</script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous" async></script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1088,7 +1088,7 @@ $('aiStop').addEventListener('click',function(){if(aiCtl)aiCtl.abort();});
 $('ovStop').addEventListener('click',function(){if(aiCtl)aiCtl.abort();});
 
 (function(){var dk=document.getElementById('deck');if(dk)dk.addEventListener('scroll',function(){if(dk.scrollLeft||dk.scrollTop){dk.scrollLeft=0;dk.scrollTop=0;}},{passive:true});})();
-var camStream=null,camFacing='user',camMirror=(function(){try{return localStorage.getItem('fm2:mirror')!=='0'}catch(e){return true}})();
+var camStream=null,camFacing='user',camMirror=(function(){try{return localStorage.getItem('fm2:'+window.FMU+'mirror')!=='0'}catch(e){return true}})();
 function camStop(){try{if(camStream)camStream.getTracks().forEach(function(t){t.stop();});}catch(_){}camStream=null;var v=$('camVideo');try{v.srcObject=null;}catch(_){}}
 function camClose(){camStop();$('camov').hidden=true;}
 async function camStart(){
@@ -1123,7 +1123,7 @@ $('camShot').addEventListener('click',function(){
   },'image/jpeg',0.92);
 });
 $('camMir').textContent='Зеркало: '+(camMirror?'вкл':'выкл');
-$('camMir').addEventListener('click',function(){camMirror=!camMirror;try{localStorage.setItem('fm2:mirror',camMirror?'1':'0')}catch(e){}$('camVideo').style.transform=camFacing==='user'&&camMirror?'scaleX(-1)':'none';$('camMir').textContent='Зеркало: '+(camMirror?'вкл':'выкл');});
+$('camMir').addEventListener('click',function(){camMirror=!camMirror;try{localStorage.setItem('fm2:'+window.FMU+'mirror',camMirror?'1':'0')}catch(e){}$('camVideo').style.transform=camFacing==='user'&&camMirror?'scaleX(-1)':'none';$('camMir').textContent='Зеркало: '+(camMirror?'вкл':'выкл');});
 document.addEventListener('visibilitychange',function(){if(document.hidden)camClose();});
 ['file','cam'].forEach(function(id){
   $(id).addEventListener('click',function(){log('Нажато: '+(id==='file'?'выбрать фото':'снять на камеру'));});
@@ -1311,7 +1311,7 @@ update();
 <script>
 (function(){
 var CFG={chatEndpoint:'https://facemeter.scallymonlight.workers.dev/chat'};/* воркер с Gemini: POST {prompt,initData} -> {text} */
-var K='fm2:',$=function(i){return document.getElementById(i)};
+var K='fm2:'+window.FMU,$=function(i){return document.getElementById(i)};
 function ld(k,d){try{var v=localStorage.getItem(K+k);return v?JSON.parse(v):d}catch(e){return d}}
 function sv(k,v){try{localStorage.setItem(K+k,JSON.stringify(v))}catch(e){}}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -1368,7 +1368,7 @@ function local(q){q=q.toLowerCase();var l=last(),s=shape();
  if(/цвет|одежд|стиль|носить/.test(q))return UT[PF.und]+'\nПалитра: '+UN[PF.und].map(function(c){return c[1]}).join(', ')+'.';
  if(/результат|анализ|балл|тир|подробн/.test(q)){if(!l)return 'Сохранённых анализов нет. Загрузите фото на шаге 1.';var w=Object.keys(l.m).filter(function(k){return l.m[k]<8});return 'Последний: '+l.tier+', '+(l.o/10).toFixed(1)+'/10. '+(w.length?'Ниже нормы: '+w.join(', ')+'. Часть показателей зависит от ракурса и света, переснимите перед выводами.':'Все показатели в норме.')}
  return 'Могу помочь с уходом за кожей, причёской, цветами и разбором ваших результатов. Выберите быстрый вопрос выше.'}
-async function ask(q){var pr='Ты ментор по уходу и стилю в приложении FaceMeter. Язык ответа: '+({ru:'русский',en:'English'}[(function(){try{return JSON.parse(localStorage.getItem('fm4:lang'))||'ru'}catch(e){return 'ru'}})()])+'. Ответ до '+(/подробн/i.test(q)?'300':'120')+' слов, без диет, калорий, лекарств и операций; при медицине пиши «к врачу». '+ctx()+'. Кожа: '+PF.skin+'. Цветотип: '+PF.und+'.\nИстория: '+CH.slice(-6).map(function(m){return m.r+': '+m.t}).join(' | ')+'\nВопрос: '+q;
+async function ask(q){var pr='Ты ментор по уходу и стилю в приложении FaceMeter. Язык ответа: '+({ru:'русский',en:'English'}[(function(){try{return JSON.parse(localStorage.getItem('fm4:'+window.FMU+'lang'))||'ru'}catch(e){return 'ru'}})()])+'. Ответ до '+(/подробн/i.test(q)?'300':'120')+' слов, без диет, калорий, лекарств и операций; при медицине пиши «к врачу». '+ctx()+'. Кожа: '+PF.skin+'. Цветотип: '+PF.und+'.\nИстория: '+CH.slice(-6).map(function(m){return m.r+': '+m.t}).join(' | ')+'\nВопрос: '+q;
  try{if(CFG.chatEndpoint){var x=await fetch(CFG.chatEndpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt:pr,initData:(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData)||''})}),d=await x.json();var tx=d.text||d.reply||d.answer||d.response;if(tx)return[tx,'Gemini']}}catch(e){}
  try{if(window.claude&&window.claude.use){var s=await window.claude.use('sample');if(s){var r=await s(pr,{modelTier:'default',cache:false});if(r&&r.text)return[r.text,'Claude']}}}catch(e){}
  return[local(q),'локальный режим: ИИ не подключён']}
@@ -1490,7 +1490,7 @@ new MutationObserver(sync).observe(deck.querySelector('.screens'),{attributes:tr
 </style>
 <script>
 (function(){
-var d=document,$=function(i){return d.getElementById(i)},K='fm2:',J='fm4:',deck=$('deck');
+var d=document,$=function(i){return d.getElementById(i)},K='fm2:'+window.FMU,J='fm4:'+window.FMU,deck=$('deck');
 function ld(k,x){try{var v=localStorage.getItem(k);return v?JSON.parse(v):x}catch(e){return x}}
 function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
