@@ -411,6 +411,75 @@ h1 .g,.g,.brand,.tier b,.fin,.kpi b{background-image:linear-gradient(180deg,#fff
 :root[data-mode=light] .bar i,:root[data-mode=light] .xpb i,:root[data-mode=light] .pbar i,:root[data-mode=light] .prog i{background:linear-gradient(90deg,#8E8F97,#000)!important}
 :root[data-mode=light] h1 .g,:root[data-mode=light] .g,:root[data-mode=light] .brand,:root[data-mode=light] .tier b,:root[data-mode=light] .fin,:root[data-mode=light] .kpi b{background-image:linear-gradient(180deg,#000,#3A3A3F 55%,#8D8E96)}
 :root[data-mode=light] .b.u,:root[data-mode=light] .cal .has{background:#000;color:#fff}
+
+/* ===== Душа: тёплое серебро, живой фон, мягкое свечение ===== */
+:root{--ink:#F6F3EC;--muted:#A29E95;--line:rgba(255,248,235,.16)}
+:root[data-mode=light]{--ink:#14120E;--muted:#716C61}
+html,body{background:#0A0908}
+:root[data-mode=light] html,:root[data-mode=light] body{background:#F1EEE7}
+:root[data-mode=light]{--bg:#F1EEE7}
+.bg{overflow:hidden}
+.bg::before,.bg::after{content:"";position:absolute;border-radius:50%;filter:blur(40px);will-change:transform}
+.bg::before{width:75vmax;height:75vmax;left:-25vmax;top:-30vmax;background:radial-gradient(closest-side,rgba(255,240,215,.20),transparent);animation:drift1 24s ease-in-out infinite alternate}
+.bg::after{width:65vmax;height:65vmax;right:-28vmax;bottom:-26vmax;background:radial-gradient(closest-side,rgba(205,212,228,.16),transparent);animation:drift2 30s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate3d(16vmax,12vmax,0) scale(1.15)}}
+@keyframes drift2{to{transform:translate3d(-14vmax,-10vmax,0) scale(1.1)}}
+:root[data-mode=light] .bg::before{background:radial-gradient(closest-side,rgba(255,255,255,.9),transparent)}
+:root[data-mode=light] .bg::after{background:radial-gradient(closest-side,rgba(200,190,170,.35),transparent)}
+body::before{content:"";position:fixed;inset:0;z-index:60;pointer-events:none;opacity:.07;mix-blend-mode:overlay;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+/* тёплое стекло */
+.card,.m,.tip,.kpi,.prompt,.status,.axinfo,.ac{background:linear-gradient(145deg,rgba(255,246,230,.15) 0%,rgba(255,246,230,.04) 45%,rgba(255,246,230,.09) 100%);border-color:rgba(255,246,230,.18)}
+:root[data-mode=light] .card,:root[data-mode=light] .m,:root[data-mode=light] .tip,:root[data-mode=light] .kpi,:root[data-mode=light] .prompt,:root[data-mode=light] .status,:root[data-mode=light] .axinfo,:root[data-mode=light] .ac{background:linear-gradient(145deg,rgba(255,255,255,.9),rgba(250,246,238,.55) 55%,rgba(240,235,224,.75))}
+/* живые заголовки: серебряный блик */
+.g,h1 .g,.brand,.tier b,.fin{background-image:linear-gradient(100deg,#8F8B83 0%,#FFFFFF 22%,#D9D5CC 40%,#FFFFFF 58%,#9A968D 80%,#FFFFFF 100%);background-size:260% 100%;animation:sheen 7s ease-in-out infinite alternate}
+:root[data-mode=light] .g,:root[data-mode=light] h1 .g,:root[data-mode=light] .brand,:root[data-mode=light] .tier b,:root[data-mode=light] .fin{background-image:linear-gradient(100deg,#000 0%,#55524B 35%,#000 60%,#8A857A 100%);background-size:260% 100%}
+@keyframes sheen{from{background-position:0% 50%}to{background-position:100% 50%}}
+/* пульсирующая точка у подписей */
+.eyebrow::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--hot);margin-right:8px;vertical-align:middle;box-shadow:0 0 10px var(--hot);animation:breathe 2.8s ease-in-out infinite}
+@keyframes breathe{50%{opacity:.35;transform:scale(.7)}}
+/* блик на главных кнопках */
+.btn.gold,.btn.primary{position:relative;overflow:hidden}
+.btn.gold::after,.btn.primary::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.75),transparent);transform:skewX(-20deg);animation:sweep 4.5s ease-in-out infinite;pointer-events:none}
+:root[data-mode=light] .btn.gold::after,:root[data-mode=light] .btn.primary::after{background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent)}
+@keyframes sweep{0%,55%{left:-60%}100%{left:130%}}
+.btn:active,.chip2:active,.seg button:active{transform:scale(.95)}
+/* дышащее свечение результата */
+.page.on .ring{animation:ringglow 4s ease-in-out infinite}
+@keyframes ringglow{0%,100%{box-shadow:0 0 30px rgba(255,246,230,.12)}50%{box-shadow:0 0 70px rgba(255,246,230,.38)}}
+:root[data-mode=light] .page.on .ring{animation:none;box-shadow:0 10px 40px rgba(60,50,30,.18)}
+.tabbar button.on{box-shadow:inset 0 1px 0 #fff,0 0 22px rgba(255,246,230,.35)}
+.stage{box-shadow:0 0 0 1px rgba(255,246,230,.18),0 20px 60px rgba(0,0,0,.55),0 0 80px rgba(255,246,230,.06)}
+.meter i{box-shadow:0 0 14px rgba(255,246,230,.8)}
+@media(prefers-reduced-motion:reduce){.bg::before,.bg::after,.g,.brand,.tier b,.fin,.eyebrow::before,.btn::after,.page.on .ring{animation:none!important}}
+
+/* ===== Производительность: убрано всё, что тормозит ===== */
+*,*::before,*::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+body::before{display:none!important}
+.bg::before,.bg::after{display:none!important}
+.bg{background:radial-gradient(60% 34% at 85% -4%,rgba(255,244,225,.13),transparent 70%),radial-gradient(55% 30% at 0% 100%,rgba(205,212,228,.09),transparent 70%)!important}
+:root[data-mode=light] .bg{background:radial-gradient(60% 34% at 85% -4%,rgba(255,255,255,.95),transparent 70%),radial-gradient(55% 30% at 0% 100%,rgba(200,190,170,.25),transparent 70%)!important}
+.g,h1 .g,.brand,.tier b,.fin{animation:none!important;background-size:100% 100%!important;background-image:linear-gradient(180deg,#fff 0%,#E6E2D8 50%,#9A968D 100%)!important}
+:root[data-mode=light] .g,:root[data-mode=light] h1 .g,:root[data-mode=light] .brand,:root[data-mode=light] .tier b,:root[data-mode=light] .fin{background-image:linear-gradient(180deg,#000,#55524B)!important}
+.btn::after{display:none!important}
+.page.on .ring{animation:none!important;box-shadow:0 0 44px rgba(255,246,230,.2)}
+.eyebrow::before{animation:none!important;box-shadow:none}
+.card,.m,.tip,.kpi,.prompt,.status,.axinfo,.ac,.btn,.chip,.chip2,.seg button,.tabbar,.tile{box-shadow:inset 0 1px 0 rgba(255,246,230,.3)!important}
+:root[data-mode=light] .card,:root[data-mode=light] .m,:root[data-mode=light] .tip,:root[data-mode=light] .kpi,:root[data-mode=light] .btn,:root[data-mode=light] .chip2,:root[data-mode=light] .seg button,:root[data-mode=light] .tabbar{box-shadow:inset 0 1px 0 #fff,0 2px 8px rgba(60,50,30,.1)!important}
+.btn.gold,.btn.primary{box-shadow:inset 0 1px 0 #fff,0 6px 18px rgba(255,246,230,.18)!important}
+.stage{box-shadow:0 0 0 1px rgba(255,246,230,.18)!important}
+.tabbar{background:rgba(26,24,21,.96)}
+:root[data-mode=light] .tabbar{background:rgba(255,255,255,.96)}
+.toast,.fmt{background:#1c1a17}
+/* ===== Нижняя панель: плавающая «таблетка» как в iOS ===== */
+.tabbar{position:relative}
+.tabbar button{position:relative;z-index:1;transition:color .35s var(--ease)}
+.tabbar button.on,:root[data-mode=light] .tabbar button.on{background:none!important;background-image:none!important;box-shadow:none!important;color:var(--accent-ink)}
+.tabbar button svg{transition:transform .35s var(--spring)}
+.tabbar button:active svg{transform:scale(.82)}
+.tabbar button.on svg{transform:scale(1.06)}
+.tabpill{position:absolute;top:5px;bottom:5px;left:0;width:0;border-radius:21px;z-index:0;pointer-events:none;background:linear-gradient(180deg,#fff,#D4D0C7);box-shadow:inset 0 1px 0 #fff,0 4px 14px rgba(255,246,230,.2);transition:transform .55s var(--ios),width .55s var(--ios);will-change:transform}
+:root[data-mode=light] .tabpill{background:linear-gradient(180deg,#3A3835,#000);box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.tabpill.nt{transition:none}
 </style></head>
 <body>
 <div class="bg"></div>
@@ -1618,6 +1687,25 @@ window.__fmR=function(R,QI){
   try{var s=$('p10'),st=s&&s.querySelector('.stg');if(st)st.insertBefore(statsNode(R,QI),st.querySelector('.stack'))}catch(e){}
   window.__fmLastR=R;burstKey=QI.length?'':R.overall.toFixed(2)+R.tier;
 };
+})();
+</script>
+<script>
+(function(){
+var bar=document.getElementById('tabbar');if(!bar)return;
+var pill=document.createElement('i');pill.className='tabpill nt';bar.insertBefore(pill,bar.firstChild);
+function place(btn,instant){
+  if(!btn)return;
+  if(instant)pill.classList.add('nt');
+  pill.style.width=btn.offsetWidth+'px';
+  pill.style.transform='translate3d('+btn.offsetLeft+'px,0,0)';
+  if(instant){void pill.offsetWidth;pill.classList.remove('nt');}
+}
+function active(){return bar.querySelector('button.on')||bar.querySelector('button[data-t]');}
+bar.addEventListener('click',function(e){var b=e.target.closest('button[data-t]');if(b)place(b,false);});
+window.addEventListener('resize',function(){place(active(),true);});
+window.addEventListener('load',function(){place(active(),true);});
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){place(active(),true);});
+requestAnimationFrame(function(){place(active(),true);});
 })();
 </script>
 </body></html>
