@@ -19,6 +19,86 @@ const hits = new Map();
 const chatHits = new Map();
 const seen = new Map();
 
+/* ---------- Статистика пользователей ----------
+   Хранилище: тот же KV (binding LB). Один ключ на пользователя: "u:<telegram_id>",
+   значение "1", данные лежат в metadata: { f: время первого /start (мс), l: время последней активности (мс) }.
+   Один ключ на пользователя = нет гонок между разными людьми, повторно один человек не считается.
+   Запись в KV не чаще одного раза в сутки на пользователя. */
+const DAY = 86400000;
+const touched = new Map();
+
+function tzOffset(env) {
+  const h = Number(env.STATS_TZ_OFFSET);
+  return Number.isFinite(h) && h >= -12 && h <= 14 ? h * 3600000 : 0;
+}
+function dayOf(ts, env) {
+  return Math.floor((ts + tzOffset(env)) / DAY);
+}
+// start=true: /start, создаёт запись. start=false: любая другая активность, только обновляет уже существующую.
+async function statsRecord(env, id, start) {
+  try {
+    if (!env.LB || !id) return;
+    if (env.OWNER_ID && String(id) === String(env.OWNER_ID)) return;
+    const now = Date.now(), today = dayOf(now, env);
+    if (!start && touched.get(id) === today) return;
+    const key = "u:" + id;
+    const cur = await env.LB.getWithMetadata(key);
+    const md = cur && cur.metadata;
+    if (touched.size > 5000) touched.clear();
+    if (!md || !Number.isFinite(md.f)) {
+      if (!start) { touched.set(id, today); return; }
+      await env.LB.put(key, "1", { metadata: { f: now, l: now } });
+    } else if (!Number.isFinite(md.l) || dayOf(md.l, env) < today) {
+      await env.LB.put(key, "1", { metadata: { f: md.f, l: now } });
+    }
+    touched.set(id, today);
+  } catch (e) {}
+}
+function bg(ctx, p) {
+  if (ctx && ctx.waitUntil) ctx.waitUntil(p); else return p;
+}
+async function collectStats(env) {
+  const today = dayOf(Date.now(), env);
+  const s = { total: 0, dau: 0, wau: 0, mau: 0, newToday: 0, newMonth: 0 };
+  let cursor;
+  do {
+    const r = await env.LB.list({ prefix: "u:", cursor });
+    for (const k of r.keys) {
+      const m = k.metadata;
+      if (!m || !Number.isFinite(m.f) || !Number.isFinite(m.l)) continue;
+      const fd = dayOf(m.f, env), ld = dayOf(m.l, env);
+      s.total++;
+      if (ld === today) s.dau++;
+      if (ld >= today - 6) s.wau++;
+      if (ld >= today - 29) s.mau++;
+      if (fd === today) s.newToday++;
+      if (fd >= today - 29) s.newMonth++;
+    }
+    cursor = r.list_complete ? undefined : r.cursor;
+  } while (cursor);
+  return s;
+}
+function statsText(s, env) {
+  const off = tzOffset(env) / 3600000;
+  return "📊 Статистика FaceMeter\n\n" +
+    "Всего пользователей: " + s.total + "\n" +
+    "Активных сегодня: " + s.dau + "\n" +
+    "Активных за 7 дней: " + s.wau + "\n" +
+    "Активных за 30 дней: " + s.mau + "\n" +
+    "Новых сегодня: " + s.newToday + "\n" +
+    "Новых за 30 дней: " + s.newMonth + "\n\n" +
+    "Часовой пояс: UTC" + (off >= 0 ? "+" : "") + off;
+}
+async function sendTo(env, chatId, text) {
+  try {
+    await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/sendMessage", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    });
+  } catch (e) {}
+}
+
 function who(u) {
   const name = ((u.first_name || "") + (u.last_name ? " " + u.last_name : "")).trim() || "без имени";
   return name + (u.username ? " (@" + u.username + ")" : "") + ", id " + u.id;
@@ -33,11 +113,12 @@ async function notifyOwner(env, text) {
     });
   } catch (e) {}
 }
-async function visit(req, env) {
+async function visit(req, env, ctx) {
   let b;
   try { b = await req.json(); } catch (e) { return json({ error: "bad_json" }, 400); }
   const u = await verifyInit(b.initData, env.BOT_TOKEN);
   if (!u || !u.id) return json({ error: "unauthorized" }, 401);
+  bg(ctx, statsRecord(env, u.id, false));
   if (String(u.id) === String(env.OWNER_ID)) return json({ ok: true });
   const now = Date.now();
   if (now - (seen.get(u.id) || 0) < 86400000) return json({ ok: true });
@@ -88,12 +169,13 @@ function num(v, lo, hi) {
   return Number.isFinite(v) && v >= lo && v <= hi ? v : null;
 }
 
-async function evaluate(req, env) {
+async function evaluate(req, env, ctx) {
   if (!env.GEMINI_API_KEY) return json({ error: "no_key" }, 503);
   let b;
   try { b = await req.json(); } catch (e) { return json({ error: "bad_json" }, 400); }
   const uid = await checkInitData(b.initData, env.BOT_TOKEN);
   if (!uid) return json({ error: "unauthorized" }, 401);
+  bg(ctx, statsRecord(env, uid, false));
   const now = Date.now(), h = (hits.get(uid) || []).filter((t) => now - t < 3600000);
   if (h.length >= 20) return json({ error: "rate_limited" }, 429);
   h.push(now); hits.set(uid, h);
@@ -151,12 +233,13 @@ async function evaluate(req, env) {
   return json({ tier: o.tier, why: o.why.slice(0, 1500), advice });
 }
 
-async function chat(req, env) {
+async function chat(req, env, ctx) {
   if (!env.GEMINI_API_KEY) return json({ error: "no_key" }, 503);
   let b;
   try { b = await req.json(); } catch (e) { return json({ error: "bad_json" }, 400); }
   const uid = await checkInitData(b.initData, env.BOT_TOKEN);
   if (!uid) return json({ error: "unauthorized" }, 401);
+  bg(ctx, statsRecord(env, uid, false));
   const now = Date.now(), h = (chatHits.get(uid) || []).filter((t) => now - t < 3600000);
   if (h.length >= 60) return json({ error: "rate_limited" }, 429);
   h.push(now); chatHits.set(uid, h);
@@ -184,12 +267,13 @@ async function chat(req, env) {
   return json({ text: text.slice(0, 3000) });
 }
 
-async function lb(req, env) {
+async function lb(req, env, ctx) {
   if (!env.LB) return json({ error: "no_kv" }, 503);
   let b;
   try { b = await req.json(); } catch (e) { return json({ error: "bad_json" }, 400); }
   const u = await verifyInit(b.initData, env.BOT_TOKEN);
   if (!u || !u.id) return json({ error: "unauthorized" }, 401);
+  bg(ctx, statsRecord(env, u.id, false));
   const raw = await env.LB.get("top");
   let list = raw ? JSON.parse(raw) : [];
   const i = list.findIndex((x) => x.id === u.id);
@@ -215,32 +299,59 @@ async function lb(req, env) {
 }
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url);
     if (url.pathname === "/evaluate") {
       if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors() });
-      if (req.method === "POST") return evaluate(req, env);
+      if (req.method === "POST") return evaluate(req, env, ctx);
       return json({ error: "method" }, 405);
     }
     if (url.pathname === "/chat") {
       if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors() });
-      if (req.method === "POST") return chat(req, env);
+      if (req.method === "POST") return chat(req, env, ctx);
       return json({ error: "method" }, 405);
     }
     if (url.pathname === "/lb") {
       if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors() });
-      if (req.method === "POST") return lb(req, env);
+      if (req.method === "POST") return lb(req, env, ctx);
       return json({ error: "method" }, 405);
     }
     if (url.pathname === "/visit") {
       if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors() });
-      if (req.method === "POST") return visit(req, env);
+      if (req.method === "POST") return visit(req, env, ctx);
       return json({ error: "method" }, 405);
     }
     if (req.method !== "POST") return new Response("ok");
+    // Необязательная защита вебхука: работает, только если задан секрет WEBHOOK_SECRET
+    // (тот же, что передан в setWebhook как secret_token).
+    if (env.WEBHOOK_SECRET && req.headers.get("x-telegram-bot-api-secret-token") !== env.WEBHOOK_SECRET) {
+      return new Response("forbidden", { status: 403 });
+    }
     let u;
     try { u = await req.json(); } catch (e) { return new Response("ok"); }
     const m = u.message;
+
+    // Закрытая команда /stats: только владелец, только в личном чате с ботом.
+    // Ответ уходит строго на OWNER_ID, а не на chat.id из запроса. Для остальных команда
+    // ничем не отличается от любого другого сообщения (ниже сработает обычное приветствие).
+    if (
+      m && m.from && m.chat && typeof m.text === "string" && env.OWNER_ID &&
+      String(m.from.id) === String(env.OWNER_ID) &&
+      m.chat.type === "private" && String(m.chat.id) === String(env.OWNER_ID) &&
+      /^\/stats(@\w+)?(\s|$)/i.test(m.text)
+    ) {
+      if (!env.LB) {
+        await sendTo(env, env.OWNER_ID, "Статистика недоступна: к воркеру не подключено KV-хранилище (binding LB).");
+      } else {
+        try {
+          await sendTo(env, env.OWNER_ID, statsText(await collectStats(env), env));
+        } catch (e) {
+          await sendTo(env, env.OWNER_ID, "Не удалось собрать статистику, попробуйте позже.");
+        }
+      }
+      return new Response("ok");
+    }
+
     if (m && m.chat) {
       await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/sendMessage", {
         method: "POST",
@@ -251,6 +362,9 @@ export default {
           reply_markup: { inline_keyboard: [[{ text: "Открыть LuxMaxing", web_app: { url: env.WEBAPP_URL } }]] },
         }),
       });
+    }
+    if (m && m.from && !m.from.is_bot && typeof m.text === "string") {
+      await statsRecord(env, m.from.id, m.text.startsWith("/start"));
     }
     if (m && m.from && typeof m.text === "string" && m.text.startsWith("/start") && String(m.from.id) !== String(env.OWNER_ID)) {
       await notifyOwner(env, "Запустил бота: " + who(m.from));
