@@ -1,8 +1,14 @@
 {
-  "name": "facemeter-bot",
+  "name": "facemeter",
   "main": "worker.js",
   "compatibility_date": "2026-11-01",
   "vars": {
     "WEBAPP_URL": "https://ceemx-star.github.io/facemeter/facemeter-app.html"
-  }
+  },
+  "kv_namespaces": [
+    {
+      "binding": "LB",
+      "id": "bc07c8223ee146bfa56bd003f0666597"
+    }
+  ]
 }
