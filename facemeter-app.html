@@ -480,6 +480,70 @@ body::before{display:none!important}
 .tabpill{position:absolute;top:5px;bottom:5px;left:0;width:0;border-radius:21px;z-index:0;pointer-events:none;background:linear-gradient(180deg,#fff,#D4D0C7);box-shadow:inset 0 1px 0 #fff,0 4px 14px rgba(255,246,230,.2);transition:transform .55s var(--ios),width .55s var(--ios);will-change:transform}
 :root[data-mode=light] .tabpill{background:linear-gradient(180deg,#3A3835,#000);box-shadow:0 4px 14px rgba(0,0,0,.25)}
 .tabpill.nt{transition:none}
+
+/* ===== Анимации вкладок (только transform/opacity: дёшево для телефона) ===== */
+.tabv:not([hidden]) .stg{animation:none}
+@keyframes tabin{from{opacity:0;transform:translate3d(var(--dx,24px),0,0) scale(.985)}to{opacity:1;transform:none}}
+@keyframes slidex{from{opacity:0;transform:translate3d(-18px,0,0)}to{opacity:1;transform:none}}
+@keyframes zoomin{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+@keyframes shine{from{transform:translate3d(-120%,0,0)}to{transform:translate3d(320%,0,0)}}
+@keyframes floaty{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-4px,0)}}
+.tabv.enter{animation:tabin .5s var(--ios) both}
+.tabv.enter .rcol>*{animation:rise .65s var(--ease) both;animation-delay:calc(var(--i,0) * 65ms + 90ms)}
+.tabv.enter .kpis>*{animation:zoomin .6s var(--spring) both;animation-delay:calc(var(--j,0) * 90ms + 260ms)}
+.tabv.enter .ach>*{animation:zoomin .55s var(--spring) both;animation-delay:calc(var(--j,0) * 55ms + 380ms)}
+.tabv.enter .seg>*,.tabv.enter .chips>*{animation:zoomin .5s var(--spring) both;animation-delay:calc(var(--j,0) * 55ms + 220ms)}
+.tabv.enter .cal>*{animation:zoomin .45s var(--spring) both;animation-delay:calc(var(--j,0) * 14ms + 320ms)}
+.tabv.enter .tg,.tabv.enter .row,.tabv.enter .rp{animation:slidex .55s var(--ease) both;animation-delay:calc(var(--j,0) * 70ms + 300ms)}
+.tabv.enter .tile{animation:rise .6s var(--ease) both;animation-delay:calc(var(--j,0) * 90ms + 300ms)}
+.tabv.enter .sw>*{animation:zoomin .5s var(--spring) both;animation-delay:calc(var(--j,0) * 60ms + 300ms)}
+.tabv.enter .ch path{animation-delay:.3s}
+.tabv.enter .av{animation:zoomin .7s var(--spring) both .15s}
+.xpb i{position:relative;overflow:hidden}
+.xpb i::after{content:"";position:absolute;top:0;bottom:0;left:0;width:30%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.7),transparent);animation:shine 2.8s ease-in-out infinite}
+.av{animation:floaty 5s ease-in-out infinite}
+.kpi,.ac,.tile,.m,.tip,.tg{transition:transform .35s var(--spring)}
+.kpi:active,.ac:active,.tile:active,.m:active,.tip:active{transform:scale(.96)}
+.cal .has:active{transform:scale(.85)}
+.ch circle{transition:transform .3s var(--spring);transform-box:fill-box;transform-origin:center}
+.ch circle:active{transform:scale(1.7)}
+.tabv .rcol>*:nth-child(1){--i:0}.tabv .rcol>*:nth-child(2){--i:1}.tabv .rcol>*:nth-child(3){--i:2}.tabv .rcol>*:nth-child(4){--i:3}.tabv .rcol>*:nth-child(5){--i:4}.tabv .rcol>*:nth-child(6){--i:5}.tabv .rcol>*:nth-child(7){--i:6}.tabv .rcol>*:nth-child(8){--i:7}.tabv .rcol>*:nth-child(9){--i:8}.tabv .rcol>*:nth-child(10){--i:9}.tabv .rcol>*:nth-child(11){--i:10}.tabv .rcol>*:nth-child(12){--i:11}.tabv .rcol>*:nth-child(13){--i:12}.tabv .rcol>*:nth-child(14){--i:13}.tabv .rcol>*:nth-child(15){--i:14}.tabv .rcol>*:nth-child(16){--i:15}.tabv .rcol>*:nth-child(17){--i:16}.tabv .rcol>*:nth-child(18){--i:17}
+.kpis>*:nth-child(1){--j:0}.kpis>*:nth-child(2){--j:1}.kpis>*:nth-child(3){--j:2}
+.ach>*:nth-child(1){--j:0}.ach>*:nth-child(2){--j:1}.ach>*:nth-child(3){--j:2}.ach>*:nth-child(4){--j:3}.ach>*:nth-child(5){--j:4}.ach>*:nth-child(6){--j:5}.ach>*:nth-child(7){--j:6}.ach>*:nth-child(8){--j:7}
+.seg>*:nth-child(1){--j:0}.seg>*:nth-child(2){--j:1}.seg>*:nth-child(3){--j:2}.seg>*:nth-child(4){--j:3}.seg>*:nth-child(5){--j:4}.seg>*:nth-child(6){--j:5}
+.chips>*:nth-child(1){--j:0}.chips>*:nth-child(2){--j:1}.chips>*:nth-child(3){--j:2}.chips>*:nth-child(4){--j:3}.chips>*:nth-child(5){--j:4}.chips>*:nth-child(6){--j:5}
+.cal>*:nth-child(1){--j:0}.cal>*:nth-child(2){--j:1}.cal>*:nth-child(3){--j:2}.cal>*:nth-child(4){--j:3}.cal>*:nth-child(5){--j:4}.cal>*:nth-child(6){--j:5}.cal>*:nth-child(7){--j:6}.cal>*:nth-child(8){--j:7}.cal>*:nth-child(9){--j:8}.cal>*:nth-child(10){--j:9}.cal>*:nth-child(11){--j:10}.cal>*:nth-child(12){--j:11}.cal>*:nth-child(13){--j:12}.cal>*:nth-child(14){--j:13}.cal>*:nth-child(15){--j:14}.cal>*:nth-child(16){--j:15}.cal>*:nth-child(17){--j:16}.cal>*:nth-child(18){--j:17}.cal>*:nth-child(19){--j:18}.cal>*:nth-child(20){--j:19}.cal>*:nth-child(21){--j:20}.cal>*:nth-child(22){--j:21}.cal>*:nth-child(23){--j:22}.cal>*:nth-child(24){--j:23}.cal>*:nth-child(25){--j:24}.cal>*:nth-child(26){--j:25}.cal>*:nth-child(27){--j:26}.cal>*:nth-child(28){--j:27}.cal>*:nth-child(29){--j:28}.cal>*:nth-child(30){--j:29}.cal>*:nth-child(31){--j:30}.cal>*:nth-child(32){--j:31}.cal>*:nth-child(33){--j:32}.cal>*:nth-child(34){--j:33}.cal>*:nth-child(35){--j:34}.cal>*:nth-child(36){--j:35}.cal>*:nth-child(37){--j:36}.cal>*:nth-child(38){--j:37}.cal>*:nth-child(39){--j:38}.cal>*:nth-child(40){--j:39}.cal>*:nth-child(41){--j:40}.cal>*:nth-child(42){--j:41}
+.tg:nth-child(1){--j:0}.tg:nth-child(2){--j:1}.tg:nth-child(3){--j:2}.tg:nth-child(4){--j:3}.tg:nth-child(5){--j:4}.tg:nth-child(6){--j:5}
+.row:nth-child(1){--j:0}.row:nth-child(2){--j:1}.row:nth-child(3){--j:2}.row:nth-child(4){--j:3}.row:nth-child(5){--j:4}.row:nth-child(6){--j:5}.row:nth-child(7){--j:6}.row:nth-child(8){--j:7}.row:nth-child(9){--j:8}.row:nth-child(10){--j:9}.row:nth-child(11){--j:10}.row:nth-child(12){--j:11}.row:nth-child(13){--j:12}.row:nth-child(14){--j:13}
+.rp:nth-child(1){--j:0}.rp:nth-child(2){--j:1}.rp:nth-child(3){--j:2}.rp:nth-child(4){--j:3}.rp:nth-child(5){--j:4}.rp:nth-child(6){--j:5}.rp:nth-child(7){--j:6}.rp:nth-child(8){--j:7}.rp:nth-child(9){--j:8}.rp:nth-child(10){--j:9}
+.tile:nth-child(1){--j:0}.tile:nth-child(2){--j:1}.tile:nth-child(3){--j:2}.tile:nth-child(4){--j:3}
+.sw>*:nth-child(1){--j:0}.sw>*:nth-child(2){--j:1}.sw>*:nth-child(3){--j:2}.sw>*:nth-child(4){--j:3}.sw>*:nth-child(5){--j:4}.sw>*:nth-child(6){--j:5}
+
+/* ===== Финальная полировка: ощущение «как в iOS» ===== */
+html{scroll-behavior:smooth;text-rendering:optimizeLegibility}
+a,button,.btn,.chip2,.seg button,.tabbar button{touch-action:manipulation}
+button,.btn,.chip2,.seg button{transition:transform .32s var(--spring),opacity .25s,background-color .3s,border-color .3s,color .3s}
+/* таблетка с лёгким «пружинным» перелётом, как у iOS */
+.tabpill{transition:transform .6s cubic-bezier(.3,1.28,.5,1),width .6s cubic-bezier(.3,1.28,.5,1)}
+/* единственное живое пятно на фоне: только transform, без blur */
+.bg{overflow:hidden}
+.bg::before{display:block!important;content:"";position:absolute;width:120vmax;height:120vmax;left:-40vmax;top:-60vmax;background:radial-gradient(closest-side,rgba(255,244,225,.10),transparent);animation:aur 40s ease-in-out infinite alternate;will-change:transform}
+@keyframes aur{to{transform:translate3d(30vmax,22vmax,0)}}
+:root[data-mode=light] .bg::before{background:radial-gradient(closest-side,rgba(255,255,255,.9),transparent)}
+/* плавная смена темы */
+html.tt,html.tt *,html.tt *::before,html.tt *::after{transition:background-color .45s ease,color .45s ease,border-color .45s ease,box-shadow .45s ease!important}
+/* лёгкая прокрутка длинных списков */
+.rp,.tip{content-visibility:auto;contain-intrinsic-size:auto 90px}
+/* мягкий вход текста по цифрам */
+.kpi b,.ring span,.val{font-variant-numeric:tabular-nums}
+/* индикатор прокрутки сверху: тонкая линия при скролле */
+.top{transition:box-shadow .3s}
+.top.scrolled{box-shadow:0 1px 0 var(--line)}
+@media(prefers-reduced-motion:reduce){.bg::before{animation:none}}
+/* запрет выделения и копирования: разрешено только в полях ввода и в ответах ассистента */
+*,*::before,*::after{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+.b.a,.b.a *{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 </style></head>
 <body>
 <div class="bg"></div>
@@ -1706,6 +1770,69 @@ window.addEventListener('resize',function(){place(active(),true);});
 window.addEventListener('load',function(){place(active(),true);});
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){place(active(),true);});
 requestAnimationFrame(function(){place(active(),true);});
+})();
+</script>
+<script>
+(function(){
+var bar=document.getElementById('tabbar');if(!bar)return;
+var prev=0,tmr={};
+function count(root){
+  [].forEach.call(root.querySelectorAll('.kpi b'),function(el){
+    var t=el.textContent.trim();if(!/^\d+(\.\d+)?$/.test(t))return;
+    var end=parseFloat(t),dec=(t.split('.')[1]||'').length,t0=0,D=1000;
+    el.textContent=(0).toFixed(dec);
+    setTimeout(function(){
+      requestAnimationFrame(function f(now){
+        if(!t0)t0=now;var k=Math.min(1,(now-t0)/D),e=1-Math.pow(1-k,3);
+        el.textContent=(end*e).toFixed(dec);
+        if(k<1&&el.isConnected)requestAnimationFrame(f);else el.textContent=t;
+      });
+    },300);
+  });
+}
+bar.addEventListener('click',function(e){
+  var b=e.target.closest('button[data-t]');if(!b)return;
+  var t=+b.dataset.t,dir=t>=prev?1:-1;prev=t;
+  if(t===0)return;
+  var v=document.getElementById('tv'+t);if(!v)return;
+  v.style.setProperty('--dx',(dir*30)+'px');
+  v.classList.remove('enter');void v.offsetWidth;v.classList.add('enter');
+  count(v);
+  clearTimeout(tmr[t]);tmr[t]=setTimeout(function(){v.classList.remove('enter');},2200);
+});
+})();
+</script>
+<script>
+(function(){
+var d=document,bar=d.getElementById('tabbar'),root=d.documentElement;
+function hap(k){try{var h=Telegram.WebApp.HapticFeedback;if(!h)return;if(k==='ok')h.notificationOccurred('success');else if(k==='sel')h.selectionChanged();else h.impactOccurred(k||'light')}catch(_){}}
+/* тактильный отклик на все нажатия по кнопкам */
+d.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.chip2,.seg button,.btn,.cal .has');if(b&&!b.disabled)hap('light')},true);
+/* плавная смена темы */
+d.addEventListener('click',function(e){
+  if(!(e.target.closest&&e.target.closest('[data-f="mode"],[data-a="th"]')))return;
+  root.classList.add('tt');clearTimeout(window.__tt);window.__tt=setTimeout(function(){root.classList.remove('tt')},700);
+},true);
+/* свайп между вкладками */
+var tabs=[].slice.call(bar.querySelectorAll('button[data-t]'));
+function curI(){for(var i=0;i<tabs.length;i++)if(tabs[i].classList.contains('on'))return i;return 0}
+[].forEach.call(d.querySelectorAll('.tabv'),function(v){
+  var x=0,y=0,t0=0,ok=false;
+  v.addEventListener('touchstart',function(e){
+    if(e.target.closest('input,textarea,.msgs,.cal'))ok=false;else ok=true;
+    var t=e.touches[0];x=t.clientX;y=t.clientY;t0=Date.now();
+  },{passive:true});
+  v.addEventListener('touchend',function(e){
+    if(!ok)return;var t=e.changedTouches[0],dx=t.clientX-x,dy=t.clientY-y;
+    if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.8&&Date.now()-t0<700){
+      var n=curI()+(dx<0?1:-1);if(n>=0&&n<tabs.length)tabs[n].click();
+    }
+  },{passive:true});
+});
+/* линия под шапкой при прокрутке */
+var top=d.querySelector('.top');
+function bindScroll(el){el.addEventListener('scroll',function(){top.classList.toggle('scrolled',el.scrollTop>6)},{passive:true})}
+[].forEach.call(d.querySelectorAll('.page,.tabv'),bindScroll);
 })();
 </script>
 </body></html>
