@@ -16,7 +16,7 @@ const NORMS = [
   ["lips", "Нижняя губа к верхней", "1.3–1.8"],
 ];
 // Версия шкалы оценок. Должна совпадать с CAL.v в приложении. Рейтинг со старой шкалой игнорируется.
-const SCORE_V = 2;
+const SCORE_V = 3;
 const hits = new Map();
 const chatHits = new Map();
 const seen = new Map();
