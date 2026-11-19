@@ -15,6 +15,8 @@ const NORMS = [
   ["mouth", "Ширина рта к носу", "1.4–1.7"],
   ["lips", "Нижняя губа к верхней", "1.3–1.8"],
 ];
+// Версия шкалы оценок. Должна совпадать с CAL.v в приложении. Рейтинг со старой шкалой игнорируется.
+const SCORE_V = 2;
 const hits = new Map();
 const chatHits = new Map();
 const seen = new Map();
@@ -199,7 +201,8 @@ async function evaluate(req, env, ctx) {
     (ms !== null ? "\nСимметрия по сетке из 468 точек: " + ms.toFixed(1) + "%" : "") +
     "\nПравила-сетка дали " + (go !== null ? go.toFixed(1) + " из 100" : "?") + ", тир " + gt + ".\n" +
     "Тиры от низшего к высшему: " + TIERS.join(", ") + ".\n" +
-    "Оцени, какому тиру соответствует это лицо в целом, а не только числа. Оценка сетки это подсказка, а не ответ: не занижай и не завышай без причины, будь последовательным. Если измерения выглядят нереалистично, скажи об этом. " +
+    "Шкала относительная: оценка сетки это процентиль среди обычных людей, 50 из 100 значит обычное лицо. Доли людей по тирам: Sub-3 около 3%, Sub-5 около 17%, LTN около 25%, MTN около 30%, HTN около 17%, Chadlite около 6%, Chad около 2%, Gigachad около 0.2%. Обычный человек это MTN или LTN, а не HTN. " +
+    "Не льсти и не завышай: для HTN и выше нужны явные сильные стороны, Chad и Gigachad ставь крайне редко. Оцени, какому тиру соответствует это лицо в целом, а не только числа, но не уходи от тира сетки больше чем на один тир в любую сторону. Если измерения выглядят нереалистично, скажи об этом. " +
     "Затем дай 3-4 коротких конкретных совета именно для этого лица: уход за кожей, сон, питание в общих чертах, стрижка или борода, как переснять фото. Без экстремальных диет, калорий и цифр веса, без операций, лекарств и «костной ломки», без оскорблений; если нужна медицина, пиши «к врачу». " +
     'Верни только JSON: {"tier":"один из списка","why":"3-5 предложений по-русски: что на фото и какие замеры решили оценку","advice":["совет","совет"]}.';
   const parts = [{ text: prompt }];
@@ -230,7 +233,13 @@ async function evaluate(req, env, ctx) {
   try { o = JSON.parse(text.slice(a, z + 1)); } catch (e) { return json({ error: "bad_answer" }, 502); }
   if (!o || !TIERS.includes(o.tier) || typeof o.why !== "string") return json({ error: "bad_answer" }, 502);
   const advice = Array.isArray(o.advice) ? o.advice.filter((x) => typeof x === "string").slice(0, 4).map((x) => x.slice(0, 300)) : [];
-  return json({ tier: o.tier, why: o.why.slice(0, 1500), advice });
+  let tier = o.tier, why = o.why;
+  const gi = TIERS.indexOf(b.gridTier), ai = TIERS.indexOf(tier);
+  if (gi >= 0 && Math.abs(ai - gi) > 1) {
+    tier = TIERS[gi + (ai > gi ? 1 : -1)];
+    why = why.slice(0, 1300) + " (Тир скорректирован: оценка не может сильно расходиться с расчётом по замерам.)";
+  }
+  return json({ tier, why: why.slice(0, 1500), advice });
 }
 
 async function chat(req, env, ctx) {
@@ -276,6 +285,7 @@ async function lb(req, env, ctx) {
   bg(ctx, statsRecord(env, u.id, false));
   const raw = await env.LB.get("top");
   let list = raw ? JSON.parse(raw) : [];
+  list = list.filter((x) => x.v === SCORE_V);
   const i = list.findIndex((x) => x.id === u.id);
   if (b.action === "leave") {
     if (i >= 0) list.splice(i, 1);
@@ -285,9 +295,10 @@ async function lb(req, env, ctx) {
   if (b.action === "submit") {
     const sc = num(b.score, 0, 100);
     if (sc === null || !TIERS.includes(b.tier)) return json({ error: "bad_data" }, 400);
+    if (b.v !== SCORE_V) return json({ error: "outdated" }, 400);
     const n = ((u.first_name || u.username || "user") + "").slice(0, 20);
-    if (i >= 0) { if (sc > list[i].s) list[i] = { id: u.id, n, s: sc, t: b.tier }; else list[i].n = n; }
-    else list.push({ id: u.id, n, s: sc, t: b.tier });
+    if (i >= 0) { if (sc > list[i].s) list[i] = { id: u.id, n, s: sc, t: b.tier, v: SCORE_V }; else list[i].n = n; }
+    else list.push({ id: u.id, n, s: sc, t: b.tier, v: SCORE_V });
     list.sort((x, y) => y.s - x.s);
     list = list.slice(0, 100);
     await env.LB.put("top", JSON.stringify(list));
