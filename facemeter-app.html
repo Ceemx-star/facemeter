@@ -357,6 +357,7 @@ body{padding:0!important;background:var(--bg)}
 <section class="scr" data-t="Статистика"><div class="inner stack narrow"><div class="panel rcol" id="s7"></div></div></section>
 <section class="scr" data-t="Style Studio"><div class="inner stack narrow"><div class="panel rcol" id="s8"></div></div></section>
 <section class="scr" data-t="Профиль"><div class="inner stack narrow"><div class="panel rcol" id="s9"></div></div></section>
+<section class="scr" data-t="Дашборд"><div class="inner stack narrow"><div class="panel rcol" id="s11"></div></div></section>
  </div>
  <button class="nav l" id="nl" type="button" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
  <button class="nav r" id="nr" type="button" aria-label="Вперёд"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
@@ -575,9 +576,9 @@ function buildMeshLayer(){
   if(typeof FACEMESH_TESSELATION!=='undefined'){
     g.beginPath();
     FACEMESH_TESSELATION.forEach(function(e){var a=meshAll[e[0]],b=meshAll[e[1]];if(a&&b){g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);}});
-    g.strokeStyle='rgba(255,255,255,.38)';g.lineWidth=Math.max(.5,cv.width/1400);g.stroke();
+    g.strokeStyle='rgba(255,255,255,.6)';g.lineWidth=Math.max(1,cv.width/800);g.stroke();
   }
-  var dr=Math.max(.9,cv.width/700);g.fillStyle='rgba(255,255,255,.85)';
+  var dr=Math.max(2.2,cv.width/380);g.fillStyle='rgba(255,255,255,.95)';
   g.beginPath();meshAll.forEach(function(p){g.moveTo(p.x+dr,p.y);g.arc(p.x,p.y,dr,0,6.2832);});g.fill();
   var ms=meshSymmetry();
   if(ms){
@@ -868,7 +869,7 @@ function update(){
   if(mode==='demo'){drawSchematic();}
   cv.classList.toggle('locked',mode==='demo');
   document.body.setAttribute('data-step',mode==='demo'?'1':(mode==='place'?'2':'3'));
-  $('badge').hidden=mode!=='demo';
+  $('badge').hidden=mode!=='demo'&&!meshAll;$('badge').textContent=mode==='demo'?'Пример на схеме':'Сетка: '+(meshAll?meshAll.length:0)+' точек, в замерах 21';
   $('undo').hidden=mode==='demo';
   $('reset').hidden=mode==='demo';
   $('pickT').textContent=mode==='demo'?'Выбрать фото':'Другое фото';
@@ -1367,14 +1368,14 @@ function local(q){q=q.toLowerCase();var l=last(),s=shape();
  if(/цвет|одежд|стиль|носить/.test(q))return UT[PF.und]+'\nПалитра: '+UN[PF.und].map(function(c){return c[1]}).join(', ')+'.';
  if(/результат|анализ|балл|тир|подробн/.test(q)){if(!l)return 'Сохранённых анализов нет. Загрузите фото на шаге 1.';var w=Object.keys(l.m).filter(function(k){return l.m[k]<8});return 'Последний: '+l.tier+', '+(l.o/10).toFixed(1)+'/10. '+(w.length?'Ниже нормы: '+w.join(', ')+'. Часть показателей зависит от ракурса и света, переснимите перед выводами.':'Все показатели в норме.')}
  return 'Могу помочь с уходом за кожей, причёской, цветами и разбором ваших результатов. Выберите быстрый вопрос выше.'}
-async function ask(q){var pr='Ты ментор по уходу и стилю в приложении FaceMeter. Отвечай по-русски, до '+(/подробн/i.test(q)?'300':'120')+' слов, без диет, калорий, лекарств и операций; при медицине пиши «к врачу». '+ctx()+'. Кожа: '+PF.skin+'. Цветотип: '+PF.und+'.\nИстория: '+CH.slice(-6).map(function(m){return m.r+': '+m.t}).join(' | ')+'\nВопрос: '+q;
+async function ask(q){var pr='Ты ментор по уходу и стилю в приложении FaceMeter. Язык ответа: '+({ru:'русский',en:'English'}[(function(){try{return JSON.parse(localStorage.getItem('fm4:lang'))||'ru'}catch(e){return 'ru'}})()])+'. Ответ до '+(/подробн/i.test(q)?'300':'120')+' слов, без диет, калорий, лекарств и операций; при медицине пиши «к врачу». '+ctx()+'. Кожа: '+PF.skin+'. Цветотип: '+PF.und+'.\nИстория: '+CH.slice(-6).map(function(m){return m.r+': '+m.t}).join(' | ')+'\nВопрос: '+q;
  try{if(CFG.chatEndpoint){var x=await fetch(CFG.chatEndpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt:pr,initData:(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData)||''})}),d=await x.json();var tx=d.text||d.reply||d.answer||d.response;if(tx)return[tx,'Gemini']}}catch(e){}
  try{if(window.claude&&window.claude.use){var s=await window.claude.use('sample');if(s){var r=await s(pr,{modelTier:'default',cache:false});if(r&&r.text)return[r.text,'Claude']}}}catch(e){}
  return[local(q),'локальный режим: ИИ не подключён']}
 function paintM(n){var m=$('msgs');if(!m)return;m.innerHTML=CH.map(function(x,i){return'<div class="b '+x.r+(n&&i===CH.length-1?' new':'')+'">'+esc(x.t)+(x.s?'<small>'+esc(x.s)+'</small>':'')+'</div>'}).join('')+(busy?'<div class="b a"><span class="dotsT"><i></i><i></i><i></i></span></div>':'');m.scrollTop=1e5}
 async function send(t){t=(t||'').trim();if(!t||busy)return;busy=true;CH.push({r:'u',t:t});paintM();var a;try{a=await ask(t)}catch(e){a=['Не получилось ответить. Попробуйте ещё раз.','ошибка']}
  busy=false;CH.push({r:'a',t:a[0],s:a[1]});CH=CH.slice(-60);sv('chat',CH);addEv('chat',t.slice(0,40));paintM(1);R7()}
-function R6(){var l=last();$('s6').innerHTML='<div class="eyebrow">AI Mentor</div><h2>Личный ментор</h2><p class="hint2">'+(l?'Знаю последний результат: '+l.tier+', '+(l.o/10).toFixed(1)+'/10.':'Анализов пока нет: ответы будут общими.')+'</p><div class="chips">'+Q.map(function(q){return'<button class="chip2" data-a="q" data-v="'+esc(q)+'">'+q+'</button>'}).join('')+'</div><div class="msgs" id="msgs"></div><div class="send"><input id="mi" type="text" placeholder="Спросите про уход, стиль, результаты" autocomplete="off"><button class="btn primary" data-a="send">Отправить</button></div><button class="btn" data-a="clr">Очистить историю</button>';paintM()}
+function R6(){var l=last();$('s6').innerHTML='<div class="eyebrow">AI Mentor</div><h2>AI Beauty Assistant</h2><p class="hint2">'+(l?'Знаю последний результат: '+l.tier+', '+(l.o/10).toFixed(1)+'/10.':'Анализов пока нет: ответы будут общими.')+'</p><div class="chips">'+Q.map(function(q){return'<button class="chip2" data-a="q" data-v="'+esc(q)+'">'+q+'</button>'}).join('')+'</div><div class="msgs" id="msgs"></div><div class="send"><input id="mi" type="text" placeholder="Спросите про уход, стиль, результаты" autocomplete="off"><button class="btn primary" data-a="send">Отправить</button></div><button class="btn" data-a="clr">Очистить историю</button>';paintM()}
 /* ---- Статистика ---- */
 function chart(a){if(a.length<2)return'<p class="hint2">Для графика нужно минимум 2 сохранённых анализа.</p>';var W=300,Hh=100,v=a.map(function(e){return e.o}),mn=Math.min.apply(0,v)-5,mx=Math.max.apply(0,v)+5,P=a.map(function(e,i){return[i/(a.length-1)*W,Hh-(e.o-mn)/(mx-mn)*Hh]});
  return'<svg class="ch" viewBox="-6 -8 312 124"><path d="M'+P.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}).join('L')+'"/>'+P.map(function(p,i){return'<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="5" data-a="pt" data-v="'+i+'"/>'}).join('')+'</svg><p class="hint2" id="pti">Нажмите на точку, чтобы увидеть отчёт.</p>'}
@@ -1462,6 +1463,90 @@ deck.appendChild(n);
 n.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var t=T[+b.dataset.t],i=t[1]<0?lf:t[1];if(dots.children[i])dots.children[i].click();try{Telegram.WebApp.HapticFeedback.selectionChanged()}catch(_){}});
 function sync(){var on=-1;[].forEach.call(deck.querySelectorAll('.scr'),function(x,i){if(x.classList.contains('on'))on=i});if(on<0)return;if(on<7)lf=on;var g=on<7?0:on-6;d.body.setAttribute('data-fmf',on<7?'1':'0');[].forEach.call(n.children,function(b,i){b.classList.toggle('on',i===g);if(i===g)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')})}
 new MutationObserver(sync).observe(deck.querySelector('.screens'),{attributes:true,subtree:true,attributeFilter:['class']});sync();
+})();
+</script>
+<style>
+/* FM4: светлая тема, дашборд, XP */
+:root[data-mode=light]{--bg:#F1F1F1;--panel:#fff;--field:#E9E9E9;--ink:#0A0A0A;--muted:#5f5f5f;--line:#d4d4d4;--accent:#111;--accent-ink:#fff;--hot:#000;--g1:#000;--g2:#222;--g3:#777;color-scheme:light}
+[data-mode=light] .deck{background:#F1F1F1}
+[data-mode=light] .o1,[data-mode=light] .o2{display:none}
+[data-mode=light] .bg .grid{background-image:linear-gradient(rgba(0,0,0,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.06) 1px,transparent 1px)}
+[data-mode=light] .panel,[data-mode=light] .glass{background:#fff;border-color:rgba(0,0,0,.12);box-shadow:0 10px 30px rgba(0,0,0,.08)}
+[data-mode=light] h1{background:linear-gradient(180deg,#000,#555);-webkit-background-clip:text;background-clip:text}
+[data-mode=light] .btn.primary{background:#111;color:#fff;box-shadow:none}
+[data-mode=light] .tabbar{background:rgba(255,255,255,.88);border-color:rgba(0,0,0,.12)}
+[data-mode=light] .tabbar button.on{background:#111;color:#fff}
+[data-mode=light] .brand,[data-mode=light] .kpi b{background:none;color:#111;-webkit-text-fill-color:#111}
+[data-mode=light] .nav{background:rgba(255,255,255,.85);color:#111;border-color:rgba(0,0,0,.2)}
+[data-mode=light] .seg .on,[data-mode=light] .chip2:hover{background:rgba(0,0,0,.08)}
+[data-mode=light] .b.u{color:#fff}[data-mode=light] .hc b{color:#111;text-shadow:none}[data-mode=light] .ring::before{background:#fff}
+.tabbar button{font-size:10.5px}
+.xpb{height:10px;border-radius:5px;background:var(--field);overflow:hidden}
+.xpb i{display:block;height:100%;width:0;background:var(--accent);border-radius:5px;transition:width 1.1s var(--ease)}
+.ach{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.ac{padding:12px;border:1px solid var(--line);border-radius:14px;font-size:13px;opacity:.45;background:var(--field)}
+.ac.on{opacity:1;border-color:var(--accent);animation:pop .5s var(--spring) both}.ac b{display:block}
+.cvp{width:100%;max-width:300px;border-radius:14px;border:1px solid var(--line);display:block;margin:0 auto}
+</style>
+<script>
+(function(){
+var d=document,$=function(i){return d.getElementById(i)},K='fm2:',J='fm4:',deck=$('deck');
+function ld(k,x){try{var v=localStorage.getItem(k);return v?JSON.parse(v):x}catch(e){return x}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var D=('Анализ|Analysis;Дашборд|Dashboard;Ментор|Assistant;Статистика|Stats;Стиль|Style;Профиль|Profile;Начать анализ|Start analysis;Анализ пропорций лица|Face proportion analysis;Загрузите фото анфас. Сетка из 468 точек измерит лицо, соберёт 12 замеров и покажет итог на шкале PSL.|Upload a front-facing photo. A 468-point mesh measures your face, collects 12 metrics and shows the result on the PSL scale.;Загрузите снимок анфас|Upload a front-facing photo;Выбрать фото|Choose photo;Другое фото|Another photo;Снять на камеру|Take a photo;Можно перетащить файл или вставить снимок из буфера.|You can drop a file or paste an image.;Лицо прямо в камеру|Face the camera;Спокойное выражение, рот закрыт.|Neutral expression, mouth closed.;Камера на уровне глаз|Camera at eye level;Ровный свет|Even light;Волосы убраны со лба.|Hair off the forehead.;Ожидание фото|Waiting for a photo;Назад на точку|Undo point;Начать заново|Start over;Отмена|Cancel;Результат|Result;Показатели|Metrics;Итог|Summary;Фото|Photo;Точки|Points;Итоговая статистика|Final stats;Все замеры|All measurements;Советы для вас|Tips for you;Как определён тир|How the tier is set;Что тянет балл вниз|What lowers the score;Скопировать результат|Copy result;Скачать картинку|Download image;Отправить|Send;Очистить историю|Clear history;Прогресс|Progress;Оформление|Appearance;Отчёты|Reports;Календарь активности|Activity calendar;История активности|Activity history;Причёска|Hair;Цвет|Color;Кожа|Skin;Поделиться карточкой|Share card;Удалить мои данные|Delete my data;Привычки сегодня|Habits today;Уровень|Level;Достижения|Achievements;Рейтинг|Leaderboard;Тёмная|Dark;Светлая|Light;Участвовать в рейтинге|Join leaderboard;Шаблон карточки|Card template;Поделиться|Share;Скачать|Download;Последний тир|Last tier;Анализов|Analyses;Первый анализ|First analysis;5 анализов|5 analyses;Тир HTN и выше|Tier HTN or higher;Рост на 0.5 балла|+0.5 score growth;10 вопросов ассистенту|10 assistant questions;20 отметок привычек|20 habit checks;Первая карточка|First share card;Уровень 3|Level 3;Нужен хотя бы один анализ|At least one analysis is needed;Рейтинг не подключён на сервере|Leaderboard is not set up on the server;Рейтинг доступен только в Telegram|Leaderboard works only in Telegram;Пока никого|Nobody yet;Опыт|XP').split(';'),M={};
+D.forEach(function(x){var p=x.split('|');M[p[0]]=p});
+var lang=ld(J+'lang','ru'),mode=ld(J+'mode','dark'),LI={ru:0,en:1};if(lang!=='en')lang='ru';
+function tr(s){return M[s]?M[s][LI[lang]]:s}
+var rec=new WeakMap();
+function walk(root){var w=d.createTreeWalker(root,NodeFilter.SHOW_TEXT),n,r,k,m;while(n=w.nextNode()){r=rec.get(n);k=r&&n.nodeValue===r.tv?r.o:n.nodeValue;m=M[k.trim()];if(!m)continue;var v=k.replace(k.trim(),m[LI[lang]]);if(n.nodeValue!==v)n.nodeValue=v;rec.set(n,{o:k,tv:v})}}
+var tq=0;new MutationObserver(function(){clearTimeout(tq);tq=setTimeout(function(){walk(deck)},60)}).observe(deck,{childList:true,subtree:true});
+function applyMode(){var L=mode==='light';d.documentElement.setAttribute('data-mode',mode);d.documentElement.lang=lang;try{var tw=Telegram.WebApp;tw.setHeaderColor(L?'#F1F1F1':'#0A0A0B');tw.setBackgroundColor(L?'#F1F1F1':'#0A0A0B')}catch(e){}}
+/* нижняя панель на 6 вкладок */
+var old=d.querySelector('.tabbar');if(old)old.remove();
+var ic=function(p){return'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'};
+var T=[['Анализ',-1,'<path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/>'],['Дашборд',11,'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>'],['Ментор',7,'<path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.5A8 8 0 1 1 21 12z"/>'],['Статистика',8,'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'],['Стиль',9,'<path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/>'],['Профиль',10,'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>']],lf=0;
+var nb=d.createElement('nav');nb.className='tabbar';nb.setAttribute('aria-label','Разделы');
+nb.innerHTML=T.map(function(t,i){return'<button type="button" data-t="'+i+'">'+ic(t[2])+'<span>'+t[0]+'</span></button>'}).join('');deck.appendChild(nb);
+nb.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var t=T[+b.dataset.t],i=t[1]<0?lf:t[1];var x=$('dots').children[i];if(x)x.click();try{Telegram.WebApp.HapticFeedback.selectionChanged()}catch(_){}});
+var scr=[].slice.call(deck.querySelectorAll('.scr'));
+function sync(){var on=-1;scr.forEach(function(s,i){if(s.classList.contains('on'))on=i});if(on<0)return;if(on<7)lf=on;var g=on<7?0:on===11?1:on-5;[].forEach.call(nb.children,function(b,i){b.classList.toggle('on',i===g);if(i===g)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});if(on===11)R()}
+new MutationObserver(sync).observe(deck.querySelector('.screens'),{attributes:true,subtree:true,attributeFilter:['class']});
+/* XP, уровни, достижения: только из реальных данных */
+function st(){var H=ld(K+'hist',[]),CH=ld(K+'chat',[]),HB=ld(K+'hab',{}),sh=ld(J+'shares',0),hb=0;Object.keys(HB).forEach(function(k){(HB[k]||[]).forEach(function(v){if(v)hb++})});var ch=CH.filter(function(m){return m.r==='u'}).length,xp=H.length*100+ch*10+hb*5+sh*20,L=Math.floor(Math.sqrt(xp/120))+1;return{H:H,ch:ch,hb:hb,sh:sh,xp:xp,L:L,lo:(L-1)*(L-1)*120,hi:L*L*120}}
+var TN=function(){return TIERS.map(function(t){return t[1]})};
+var A=[['Первый анализ',function(s){return s.H.length>=1}],['5 анализов',function(s){return s.H.length>=5}],['Тир HTN и выше',function(s){return s.H.some(function(e){return TN().indexOf(e.tier)>=4})}],['Рост на 0.5 балла',function(s){return s.H.length>1&&s.H[s.H.length-1].o-s.H[0].o>=5}],['10 вопросов ассистенту',function(s){return s.ch>=10}],['20 отметок привычек',function(s){return s.hb>=20}],['Первая карточка',function(s){return s.sh>=1}],['Уровень 3',function(s){return s.L>=3}]];
+function toast(x){var e=d.createElement('div');e.className='fmt';e.textContent=x;d.body.appendChild(e);setTimeout(function(){e.remove()},2600)}
+/* рейтинг через воркер (нужен KV LB) */
+var EP='https://facemeter.scallymonlight.workers.dev/lb';
+function lbc(a,x){var i=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData;if(!i)return Promise.reject();return fetch(EP,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(Object.assign({action:a,initData:i},x||{}))}).then(function(r){return r.json()})}
+function lbLoad(s){var box=$('lbl');if(!box)return;var l=s.H[s.H.length-1],best=s.H.length?Math.max.apply(0,s.H.map(function(e){return e.o})):0,p=ld(J+'lb',false)&&l?lbc('submit',{score:best,tier:l.tier}).then(function(){return lbc('top')}):lbc('top');
+ p.then(function(r){if(r.error){box.textContent=r.error==='no_kv'?tr('Рейтинг не подключён на сервере'):r.error;return}box.innerHTML=r.top.length?r.top.map(function(x,i){return'<div class="tg"><span>'+(i+1)+'. '+esc(x.n)+'</span><span>'+(x.s/10).toFixed(1)+' · '+esc(x.t)+'</span></div>'}).join(''):tr('Пока никого')}).catch(function(){box.textContent=tr('Рейтинг доступен только в Telegram')})}
+/* карточки */
+var CT=ld(J+'ct','dark');
+function card(k){var c=d.createElement('canvas');c.width=600;c.height=750;var g=c.getContext('2d'),s=st(),l=s.H[s.H.length-1],pf=ld(K+'pf',{}),dk=k!=='light',fg=dk?'#F4F4F4':'#0A0A0A',mu=dk?'#9A9A9A':'#666',gr=g.createLinearGradient(0,0,600,750);
+ gr.addColorStop(0,dk?(k==='metrics'?'#262626':'#161616'):'#FFFFFF');gr.addColorStop(1,dk?'#050505':'#DADADA');g.fillStyle=gr;g.fillRect(0,0,600,750);g.strokeStyle=fg;g.globalAlpha=.35;g.strokeRect(14,14,572,722);g.globalAlpha=1;
+ g.fillStyle=mu;g.font='600 20px sans-serif';g.fillText('FACEMETER',44,70);g.fillStyle=fg;g.font='800 34px sans-serif';g.fillText(pf.name||'',44,120);
+ g.font='800 120px sans-serif';g.fillText(pf.hide?'—':l.tier,44,270);g.font='500 34px sans-serif';g.fillStyle=mu;g.fillText((l.o/10).toFixed(1)+' / 10',44,320);
+ if(k==='metrics'){var ids=Object.keys(l.m).sort(function(a,b){return l.m[b]-l.m[a]}).slice(0,5);ids.forEach(function(id,i){var y=390+i*62,sp=SPEC.filter(function(x){return x.id===id})[0];g.fillStyle=fg;g.font='600 20px sans-serif';g.fillText(sp?sp.name:id,44,y);g.fillStyle='rgba(255,255,255,.15)';g.fillRect(44,y+12,512,10);g.fillStyle=fg;g.fillRect(44,y+12,51.2*l.m[id],10)})}
+ else{g.fillStyle=mu;g.font='500 24px sans-serif';g.fillText(s.H.length+' '+tr('Анализов').toLowerCase()+' · '+tr('Уровень')+' '+s.L,44,420)}
+ return c}
+function R(){var s=st(),l=s.H[s.H.length-1],pct=Math.round(100*(s.xp-s.lo)/(s.hi-s.lo)),h='<div class="eyebrow">'+tr('Дашборд')+'</div><div class="seg">'+['ru','en'].map(function(x){return'<button data-f="lang" data-v="'+x+'" class="'+(lang===x?'on':'')+'">'+x.toUpperCase()+'</button>'}).join('')+['dark','light'].map(function(x){return'<button data-f="mode" data-v="'+x+'" class="'+(mode===x?'on':'')+'">'+tr(x==='dark'?'Тёмная':'Светлая')+'</button>'}).join('')+'</div>'+
+ '<div class="kpis"><div class="kpi"><b>'+s.L+'</b><span>'+tr('Уровень')+'</span></div><div class="kpi"><b>'+s.xp+'</b><span>'+tr('Опыт')+'</span></div><div class="kpi"><b>'+(l?l.tier:'—')+'</b><span>'+tr('Последний тир')+'</span></div></div><div class="xpb"><i id="xpi" data-p="'+pct+'"></i></div><p class="hint2">'+s.xp+' / '+s.hi+' XP</p>';
+ if(s.H.length>1){var v=s.H.map(function(e){return e.o}),mn=Math.min.apply(0,v)-3,mx=Math.max.apply(0,v)+3;h+='<svg class="ch" viewBox="-6 -8 312 74"><path d="M'+v.map(function(y,i){return(i/(v.length-1)*300).toFixed(1)+','+(60-(y-mn)/(mx-mn)*60).toFixed(1)}).join('L')+'"/></svg>'}
+ h+='<div class="sec"><h2>'+tr('Достижения')+'</h2><div class="ach">'+A.map(function(a){return'<div class="ac'+(a[1](s)?' on':'')+'"><b>'+tr(a[0])+'</b></div>'}).join('')+'</div></div>'+
+ '<div class="sec"><h2>'+tr('Рейтинг')+'</h2><div class="tg"><span>'+tr('Участвовать в рейтинге')+'</span><button class="chip2" data-f="lb">'+(ld(J+'lb',false)?'ON':'OFF')+'</button></div><div id="lbl" class="hint2">…</div></div>'+
+ '<div class="sec"><h2>'+tr('Шаблон карточки')+'</h2><div class="seg">'+['dark','light','metrics'].map(function(x){return'<button data-f="ct" data-v="'+x+'" class="'+(CT===x?'on':'')+'">'+x+'</button>'}).join('')+'</div><div id="cvh">'+(l?'':'<p class="hint2">'+tr('Нужен хотя бы один анализ')+'</p>')+'</div>'+(l?'<div class="toolbar"><button class="btn primary" data-f="sh">'+tr('Поделиться')+'</button><button class="btn" data-f="dl">'+tr('Скачать')+'</button></div>':'')+'</div>';
+ $('s11').innerHTML=h;walk($('s11'));var ids=ld(J+'ach',[]),now=A.filter(function(a){return a[1](s)}).map(function(a){return a[0]});now.forEach(function(x){if(ids.indexOf(x)<0)toast(tr('Достижения')+': '+tr(x))});sv(J+'ach',now);
+ setTimeout(function(){var e=$('xpi');if(e)e.style.width=e.dataset.p+'%'},60);
+ if(l){var cv=card(CT);cv.className='cvp';$('cvh').appendChild(cv)}
+ lbLoad(s)}
+function out(f){card(CT).toBlob(function(b){var x=new File([b],'facemeter-card.png',{type:'image/png'});if(f==='sh'&&navigator.canShare&&navigator.canShare({files:[x]}))navigator.share({files:[x]}).catch(function(){});else{var a=d.createElement('a');a.href=URL.createObjectURL(b);a.download=x.name;a.click()}sv(J+'shares',ld(J+'shares',0)+1);R()})}
+d.addEventListener('click',function(e){var b=e.target.closest('[data-f]');if(!b)return;var f=b.dataset.f,v=b.dataset.v;
+ if(f==='lang'){lang=v;sv(J+'lang',v);applyMode();walk(deck);R()}else if(f==='mode'){mode=v;sv(J+'mode',v);applyMode();R()}
+ else if(f==='ct'){CT=v;sv(J+'ct',v);R()}else if(f==='sh'||f==='dl')out(f)
+ else if(f==='lb'){var on=!ld(J+'lb',false);sv(J+'lb',on);if(!on)lbc('leave').catch(function(){});R()}});
+applyMode();walk(deck);sync();
 })();
 </script>
 </body></html>
