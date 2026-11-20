@@ -191,28 +191,161 @@ const QA_TEXT = {
 const QA_BAD = new Set(["points", "order", "tiny", "cropped", "implausible", "mesh_invalid", "yaw_bad", "pitch_bad", "eyes_closed", "mouth_open", "unstable"]);
 const CONF = { low: "low", medium: "medium", high: "high" };
 
-// Быстрый вызов Gemini: без поиска и «размышлений», без таймаута; при ошибке сразу пробует запасную модель.
-async function gem(env, body) {
-  const list = (env.GEMINI_MODEL ? [env.GEMINI_MODEL] : []).concat(MODELS);
-  let last = 0;
-  for (const m of list) {
-    const think = /^gemini-3/.test(m) ? { thinkingLevel: "low" } : { thinkingBudget: 0 };
-    for (const useThink of [true, false]) {
-      const gc = Object.assign({}, body.generationConfig, useThink ? { thinkingConfig: think } : {});
-      try {
-        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent", {
-          method: "POST",
-          headers: { "x-goog-api-key": env.GEMINI_API_KEY, "content-type": "application/json" },
-          body: JSON.stringify(Object.assign({}, body, { generationConfig: gc })),
-        });
-        if (r.ok) return await r.json();
-        last = r.status;
-        if (r.status !== 400) break; // 400: модель не поддерживает thinkingConfig, повтор без него
-      } catch (e) { last = 0; break; }
+/* ================= ИИ-оценщик: стабильный, быстрый, с кэшем =================
+   Что сделано против «каждый раз другой результат»:
+   1. Замеры округляются перед запросом, мелкий шум точек не меняет вход.
+   2. Ответ кэшируется по хэшу (фото + округлённые замеры + версия промпта): одинаковый вход даёт один и тот же ответ.
+   3. ИИ ставит числа по жёсткой шкале 1-10 с якорями, а тир считает код по фиксированной таблице. Тир напрямую ИИ не выбирает.
+   4. Три параллельных прохода с разным seed, берётся медиана. Один выброс не меняет тир.
+   5. temperature низкая, seed задан, модели закреплены (без плавающего алиаса).
+   Что сделано против «долго думает»:
+   1. Проходы идут параллельно, два из трёх возвращают только числа (мало токенов).
+   2. Таймаут на каждый запрос и «страховочный» запрос ко второй модели, если первая молчит. */
+const EVAL_V = 4;
+const SCORE_KEYS = ["overall", "harmony", "eyes", "midface", "jaw"];
+const WEIGHTS = { overall: 0.4, harmony: 0.2, eyes: 0.15, midface: 0.1, jaw: 0.15 };
+/* Якоря шкалы 1-10 -> перцентиль среди обычных людей. Совпадают с текстом промпта. Тиры считаются по TIER_MIN из этого перцентиля. */
+const KNOTS = [[1, 0.3], [2, 3], [4, 20], [5, 45], [6, 70], [7, 88], [8, 96.5], [9, 99.3], [10, 99.9]];
+function pctOf(s) {
+  if (s <= KNOTS[0][0]) return KNOTS[0][1];
+  for (let i = 1; i < KNOTS.length; i++) {
+    if (s <= KNOTS[i][0]) {
+      const [x0, y0] = KNOTS[i - 1], [x1, y1] = KNOTS[i];
+      return y0 + ((s - x0) / (x1 - x0)) * (y1 - y0);
     }
   }
-  return { __fail: last };
+  return KNOTS[KNOTS.length - 1][1];
 }
+const median = (a) => { const s = a.slice().sort((x, y) => x - y), n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
+const r1 = (x) => Math.round(x * 10) / 10;
+const CONF_N = { low: 0, medium: 1, high: 2 }, CONF_S = ["low", "medium", "high"];
+
+async function sha256hex(str) {
+  const d = await crypto.subtle.digest("SHA-256", enc.encode(str));
+  return hex(new Uint8Array(d));
+}
+function modelList(env) {
+  const base = ["gemini-2.5-flash", "gemini-3-flash-preview", "gemini-3.1-flash-lite", "gemini-flash-latest"];
+  const l = (env.GEMINI_MODEL ? [env.GEMINI_MODEL] : []).concat(base);
+  return l.filter((m, i) => l.indexOf(m) === i).slice(0, 3);
+}
+async function callModel(env, m, body, ms) {
+  const think = /^gemini-3/.test(m) ? { thinkingLevel: "low" } : { thinkingBudget: 0 };
+  let status = 0;
+  for (const useThink of [true, false]) {
+    const gc = Object.assign({}, body.generationConfig, useThink ? { thinkingConfig: think } : {});
+    const ac = new AbortController();
+    const t = setTimeout(() => ac.abort(), ms);
+    try {
+      const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent", {
+        method: "POST",
+        headers: { "x-goog-api-key": env.GEMINI_API_KEY, "content-type": "application/json" },
+        body: JSON.stringify(Object.assign({}, body, { generationConfig: gc })),
+        signal: ac.signal,
+      });
+      if (r.ok) return { ok: true, j: await r.json() };
+      status = r.status;
+      if (r.status !== 400) return { ok: false, status };
+    } catch (e) { return { ok: false, status: 0 }; } finally { clearTimeout(t); }
+  }
+  return { ok: false, status };
+}
+/* Один запрос с запасными моделями. Следующая модель стартует либо после ошибки, либо через HEDGE_MS молчания первой; побеждает первый валидный ответ. */
+function ask(env, body, validate) {
+  const list = modelList(env);
+  const HEDGE = Number(env.HEDGE_MS) || 4500, CALL = Number(env.CALL_MS) || 9000, TOTAL = Number(env.TOTAL_MS) || 16000;
+  return new Promise((resolve) => {
+    let pending = 0, done = false, idx = 0, last = 0, hedge = null;
+    const finish = (x) => { if (done) return; done = true; clearTimeout(hedge); clearTimeout(cap); resolve(x || { fail: last }); };
+    const cap = setTimeout(() => finish(null), TOTAL);
+    const launch = () => {
+      if (done) return;
+      if (idx >= list.length) { if (!pending) finish(null); return; }
+      const m = list[idx++]; pending++;
+      clearTimeout(hedge);
+      if (idx < list.length) hedge = setTimeout(launch, HEDGE);
+      callModel(env, m, body, CALL).then((r) => {
+        pending--;
+        if (done) return;
+        if (r.ok) { const v = validate(r.j); if (v) return finish({ v, model: m }); last = 502; } else last = r.status;
+        launch();
+      });
+    };
+    launch();
+  });
+}
+/* Совместимость с /chat */
+async function gem(env, body) {
+  const r = await ask(env, body, (j) => j);
+  return r.v ? r.v : { __fail: r.fail || 0 };
+}
+function textOf(d) {
+  const parts = (((d.candidates || [])[0] || {}).content || {}).parts || [];
+  return parts.map((x) => x.text || "").join("");
+}
+function parseJson(d) {
+  const t = textOf(d), a = t.indexOf("{"), z = t.lastIndexOf("}");
+  if (a < 0 || z < a) return null;
+  try { return JSON.parse(t.slice(a, z + 1)); } catch (e) { return null; }
+}
+const sc = (v) => (typeof v === "number" && Number.isFinite(v) ? Math.min(10, Math.max(1, Math.round(v * 2) / 2)) : null);
+function readScores(o) {
+  if (!o || typeof o !== "object") return null;
+  const out = {};
+  for (const k of SCORE_KEYS) { const v = sc(o[k]); if (v === null) return null; out[k] = v; }
+  out.confidence = CONF_N[o.confidence] !== undefined ? o.confidence : "medium";
+  return out;
+}
+const SCORE_PROPS = {
+  overall: { type: "NUMBER" }, harmony: { type: "NUMBER" }, eyes: { type: "NUMBER" }, midface: { type: "NUMBER" }, jaw: { type: "NUMBER" },
+  confidence: { type: "STRING", enum: ["low", "medium", "high"] },
+};
+function schemaFor(full) {
+  const props = Object.assign({}, SCORE_PROPS);
+  const req = SCORE_KEYS.concat(["confidence"]);
+  if (full) {
+    props.why = { type: "STRING" };
+    props.concerns = { type: "ARRAY", items: { type: "STRING" } };
+    props.advice = { type: "ARRAY", items: { type: "STRING" } };
+    req.push("why", "concerns", "advice");
+  }
+  return { type: "OBJECT", properties: props, required: req };
+}
+/* Округление замеров: шаг около 0.7% допустимого диапазона. Шум точек меньше шага не меняет ни промпт, ни ключ кэша. */
+function quant(v, lo, hi) {
+  const step = (hi - lo) / 150;
+  return Math.round(v / step) * step;
+}
+
+function buildPrompt(lines, ms, qaLines, hasImg, full) {
+  return (
+    "Ты строгий независимый эксперт по оценке лица по шкале looksmax-форумов. Шкала условная и НЕ научная. " +
+    "Оцениваешь только черты и структуру лица. Причёска, борода, макияж, фильтры, свет, ракурс и качество фото не повышают и не понижают оценку. " +
+    "Не определяй личность, возраст, национальность и состояние здоровья. Не льсти: пиши прямо и без сглаживания, но без оскорблений.\n" +
+    (hasImg
+      ? "Дано фото лица без разметки и замеры по точкам FaceMesh (ниже). Замеры могут быть неточными из-за ракурса, света или сбитых точек. Сначала оцени по самому фото, потом сверься с замерами; если они расходятся, доверяй фото.\n"
+      : "Фото тебе НЕ передано, есть только числа замеров. Не описывай внешность, кожу и волосы: ты их не видел. Уверенность не выше medium.\n") +
+    "Замеры:\n" + lines.join("\n") +
+    (ms !== null ? "\nСимметрия по 24 парам точек сетки: " + ms.toFixed(1) + "%" : "") +
+    (qaLines.length ? "\nОграничения снимка: " + qaLines.join("; ") + "." : "") +
+    "\nЗамеры с пометкой «ненадёжно» и замеры при ограничениях снимка не считай основанием для категоричных выводов.\n" +
+    "Поставь пять оценок числом от 1 до 10 с шагом 0.5 по ОДНОЙ шкале. Шкала сравнивает лицо со случайными людьми того же пола и возраста. Якоря: " +
+    "2 = лучше 3% людей; 4 = лучше 20%; 5 = лучше 45% (обычный человек, середина); 6 = лучше 70%; 7 = лучше 88%; 8 = лучше 96.5%; 9 = лучше 99.3%; 10 = лучше 99.9%. " +
+    "Большинство людей получает 4-6. Оценка 7 означает явно выше большинства, 8 и выше ставь только при очевидной, бросающейся в глаза структуре, 9 и 10 почти никогда.\n" +
+    "Показатели: overall = общее впечатление от лица как целого; harmony = гармония, пропорции, симметрия; eyes = область глаз (форма, посадка, наклон, брови); " +
+    "midface = нос, скулы, середина лица; jaw = челюсть, подбородок, нижняя треть. Каждый показатель оценивай отдельно, не копируй одно число во все.\n" +
+    "confidence = low, medium или high: насколько ты уверен с учётом качества данных.\n" +
+    (full
+      ? "Дополнительно: why = 2-3 коротких предложения по-русски про сильные и слабые стороны (что видно и какие замеры важны); не называй в why общий уровень или тир. " +
+        "concerns = до 3 коротких сомнений в данных или на фото. advice = ровно 3 коротких совета: уход за кожей, сон, питание в общих чертах, стрижка или борода, как переснять фото. " +
+        "В советах без экстремальных диет, калорий и цифр веса, без операций, лекарств и «костной ломки», без оскорблений; если нужна медицина, пиши «к врачу».\n"
+      : "Больше ничего не пиши, только числа и confidence.\n") +
+    "Верни только JSON."
+  );
+}
+
+const inflight = new Map();
+const evalMem = new Map();
 
 async function evaluate(req, env, ctx) {
   if (!env.GEMINI_API_KEY) return json({ error: "no_key" }, 503);
@@ -223,98 +356,119 @@ async function evaluate(req, env, ctx) {
   if (!uid) return json({ error: "unauthorized" }, 401);
   bg(ctx, statsRecord(env, uid, false));
   if (b.v !== SCORE_V) return json({ error: "outdated" }, 400);
-  const now = Date.now(), h = (hits.get(uid) || []).filter((t) => now - t < 3600000);
-  if (h.length >= 20) return json({ error: "rate_limited" }, 429);
-  h.push(now); hits.set(uid, h);
-  if (hits.size > 5000) hits.clear();
 
-  /* Контроль качества от приложения. Если снимок признан непригодным, оценку не делаем. */
   const qa = b.qa && typeof b.qa === "object" ? b.qa : {};
   const codes = Array.isArray(qa.codes) ? qa.codes.filter((c) => typeof c === "string").slice(0, 20) : [];
   if (qa.level === "bad" || codes.some((c) => QA_BAD.has(c))) return json({ error: "photo_unsuitable" }, 422);
-  const qaLines = codes.filter((c) => QA_TEXT[c]).map((c) => QA_TEXT[c]);
+  const qaLines = codes.filter((c) => QA_TEXT[c]).map((c) => QA_TEXT[c]).sort();
 
-  /* Замеры: только настоящие числа в правдоподобных границах. Пропуск или null не превращается в 0. */
   const raw = b.raw && typeof b.raw === "object" ? b.raw : {};
   const sdIn = b.sd && typeof b.sd === "object" ? b.sd : {};
   const relIn = b.rel && typeof b.rel === "object" ? b.rel : {};
   const lines = [];
+  let lowRel = 0;
   for (const [id, name, norm] of NORMS) {
     const [lo, hi] = RANGES[id];
-    const v = num(raw[id], lo, hi);
-    if (v === null) return json({ error: "bad_data", field: id }, 400);
+    const v0 = num(raw[id], lo, hi);
+    if (v0 === null) return json({ error: "bad_data", field: id }, 400);
+    const v = quant(v0, lo, hi);
     const sd = num(sdIn[id], 0, hi - lo);
     let line = name + ": " + v.toFixed(2) + " (норма " + norm + ")";
-    if (sd !== null) line += ", погрешность ±" + sd.toFixed(2);
-    if (relIn[id] === "low") line += " [ненадёжно: погрешность сравнима с допуском]";
+    if (sd !== null) line += ", погрешность ±" + (Math.round(sd * 50) / 50).toFixed(2);
+    if (relIn[id] === "low") { line += " [ненадёжно: погрешность сравнима с допуском]"; lowRel++; }
     lines.push(line);
   }
-  const ms = num(b.meshSym, 0, 100);
+  const ms0 = num(b.meshSym, 0, 100);
+  const ms = ms0 === null ? null : Math.round(ms0 * 2) / 2;
   const go = num(b.gridOverall, 0, 100);
   const gt = TIERS.includes(b.gridTier) ? b.gridTier : null;
   const img = typeof b.image === "string" && b.image.length > 100 && b.image.length < 2500000 &&
     b.image.startsWith("/9j/") && /^[A-Za-z0-9+/=]+$/.test(b.image) ? b.image : null;
 
-  /* Расчёт по сетке модели НЕ попадает в промпт: ИИ оценивает независимо, иначе он якорится на чужом результате.
-     Сравнение с расчётом делается ниже, в коде, и показывается пользователю как есть. */
-  const prompt =
-    "Ты независимый эксперт по оценке лица по шкале looksmax-форумов. Шкала условная и НЕ научная, оценка субъективная.\n" +
-    (img
-      ? "Тебе дано фото лица без разметки. Программа посчитала замеры по точкам FaceMesh (ниже). Они могут быть неточными из-за ракурса, света или ошибки точек: если фото и числа расходятся, скажи об этом прямо и доверяй фото. Не определяй личность, возраст, национальность и состояние здоровья.\n" +
-        "Сначала посмотри на фото сам: форма лица и челюсти, скулы, глаза, нос, губы, общая гармония. Потом сверь с замерами. Отвечай сразу, без долгих рассуждений: шкала и доли тиров ниже имеют приоритет.\n"
-      : "Фото тебе НЕ передано. Ты видишь только числа замеров. Не описывай внешность, кожу, волосы и то, что якобы видно на фото: ты этого не видел. Пиши только про замеры.\n") +
-    "Замеры:\n" + lines.join("\n") +
-    (ms !== null ? "\nСимметрия по 24 парам точек сетки (отдельный показатель): " + ms.toFixed(1) + "%" : "") +
-    (qaLines.length ? "\nОграничения снимка: " + qaLines.join("; ") + "." : "") +
-    "\nЗамеры с пометкой «ненадёжно» и замеры при ограничениях снимка не используй как основание для категоричных выводов.\n" +
-    "Тиры от низшего к высшему: " + TIERS.join(", ") + ".\n" +
-    "Шкала относительная: тир показывает место среди обычных людей. Доли людей по тирам: Sub-3 около 3%, Sub-5 около 17%, LTN около 25%, MTN около 30%, HTN около 17%, Chadlite около 6%, Chad около 2%, Gigachad около 0.2%. Обычный человек это MTN или LTN, а не HTN. " +
-    "Не льсти и не завышай: для HTN и выше нужны явные сильные стороны, Chad и Gigachad ставь крайне редко. " +
-    "Оцени, какому тиру соответствует это лицо, исходя только из того, что тебе дано. Если ограничений много, а данных мало, снижай уверенность. " +
-    "Затем дай 3-4 коротких конкретных совета: уход за кожей, сон, питание в общих чертах, стрижка или борода, как переснять фото. Без экстремальных диет, калорий и цифр веса, без операций, лекарств и «костной ломки», без оскорблений; если нужна медицина, пиши «к врачу». " +
-    'Верни только JSON: {"tier":"один из списка","confidence":"low|medium|high","why":"3-5 предложений по-русски: ' +
-    (img ? "что видно на фото и какие замеры решили оценку" : "какие замеры в норме, какие нет и что из этого следует, без описания фото") +
-    '","concerns":["до 3 коротких сомнений: что в данных или на фото вызывает недоверие"],"advice":["совет","совет"]}.';
-  const parts = [{ text: prompt }];
-  if (img) parts.push({ inline_data: { mime_type: "image/jpeg", data: img } });
-  const d = await gem(env, {
-    contents: [{ role: "user", parts }],
+  const key = "ev:" + EVAL_V + ":" + (await sha256hex([EVAL_V, lines.join("|"), ms, qaLines.join(","), img || "-"].join("#")));
+  const seed0 = parseInt(key.slice(-7), 16) % 2000000000;
+
+  /* Кэш: тот же вход даёт тот же ответ, ИИ не вызывается и лимит не тратится. */
+  let res = evalMem.get(key) || null;
+  let cached = !!res;
+  if (!res && env.LB) { try { res = await env.LB.get(key, "json"); if (res) cached = true; } catch (e) { res = null; } }
+  if (!res) {
+    const now = Date.now(), h = (hits.get(uid) || []).filter((t) => now - t < 3600000);
+    if (h.length >= 20) return json({ error: "rate_limited" }, 429);
+    h.push(now); hits.set(uid, h);
+    if (hits.size > 5000) hits.clear();
+    let pr = inflight.get(key);
+    if (!pr) {
+      pr = compute(env, { lines, ms, qaLines, img, lowRel, seed0 }).finally(() => inflight.delete(key));
+      inflight.set(key, pr);
+    }
+    res = await pr;
+    if (res.error) return json({ error: res.error }, 502);
+    if (evalMem.size > 500) evalMem.clear();
+    evalMem.set(key, res);
+    if (env.LB) bg(ctx, env.LB.put(key, JSON.stringify(res), { expirationTtl: 2592000 }).catch(() => {}));
+  } else if (!evalMem.has(key)) evalMem.set(key, res);
+
+  const gi = gt ? TIERS.indexOf(gt) : -1, ai = TIERS.indexOf(res.tier);
+  const gap = gi >= 0 ? ai - gi : null;
+  const claimsPhoto = !img && /на (этом |данном )?(фото|снимке|изображении)|я вижу|по фото|видно,? что|виден|видна|видны/i.test(res.why);
+  return json({
+    tier: res.tier, score: res.score, why: res.why, advice: res.advice, concerns: res.concerns, confidence: res.confidence,
+    basis: img ? "photo+numbers" : "numbers", gridTier: gt, gridOverall: go, gap, diverged: gap !== null && Math.abs(gap) > 1, claimsPhoto,
+    samples: res.samples, cached,
+  });
+}
+
+async function compute(env, p) {
+  const N = Math.min(3, Math.max(1, Number(env.EVAL_SAMPLES) || 3));
+  const parts = [{ text: buildPrompt(p.lines, p.ms, p.qaLines, !!p.img, true) }];
+  const partsLite = [{ text: buildPrompt(p.lines, p.ms, p.qaLines, !!p.img, false) }];
+  if (p.img) { const im = { inline_data: { mime_type: "image/jpeg", data: p.img } }; parts.push(im); partsLite.push(im); }
+  const mk = (i, full) => ({
+    contents: [{ role: "user", parts: full ? parts : partsLite }],
     generationConfig: {
-      maxOutputTokens: 900,
-      temperature: 0.2,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: "OBJECT",
-        properties: {
-          tier: { type: "STRING", enum: TIERS },
-          confidence: { type: "STRING", enum: ["low", "medium", "high"] },
-          why: { type: "STRING" },
-          concerns: { type: "ARRAY", items: { type: "STRING" } },
-          advice: { type: "ARRAY", items: { type: "STRING" } },
-        },
-        required: ["tier", "confidence", "why", "concerns", "advice"],
-      },
+      maxOutputTokens: full ? 700 : 120, temperature: 0.2, seed: p.seed0 + i,
+      responseMimeType: "application/json", responseSchema: schemaFor(full),
     },
   });
-  if (d.__fail !== undefined) return json({ error: "upstream_" + d.__fail }, 502);
-  const outParts = (((d.candidates || [])[0] || {}).content || {}).parts || [];
-  const text = outParts.map((x) => x.text || "").join("");
-  const a = text.indexOf("{"), z = text.lastIndexOf("}");
-  let o;
-  try { o = JSON.parse(text.slice(a, z + 1)); } catch (e) { return json({ error: "bad_answer" }, 502); }
-  if (!o || !TIERS.includes(o.tier) || typeof o.why !== "string") return json({ error: "bad_answer" }, 502);
-  const advice = Array.isArray(o.advice) ? o.advice.filter((x) => typeof x === "string").slice(0, 4).map((x) => x.slice(0, 300)) : [];
-  const concerns = Array.isArray(o.concerns) ? o.concerns.filter((x) => typeof x === "string").slice(0, 3).map((x) => x.slice(0, 200)) : [];
-  const confidence = CONF[o.confidence] || null;
-  /* Тир ИИ возвращается как есть. Расхождение с расчётом не скрывается и не «исправляется», а сообщается. */
-  const gi = gt ? TIERS.indexOf(gt) : -1, ai = TIERS.indexOf(o.tier);
-  const gap = gi >= 0 ? ai - gi : null;
-  /* Без фото ИИ не должен ссылаться на то, что «видно»: если сослался, помечаем ответ. */
-  const claimsPhoto = !img && /на (этом |данном )?(фото|снимке|изображении)|я вижу|по фото|видно,? что|виден|видна|видны/i.test(o.why);
-  return json({
-    tier: o.tier, why: o.why.slice(0, 1500), advice, concerns, confidence,
-    basis: img ? "photo+numbers" : "numbers", gridTier: gt, gridOverall: go, gap, diverged: gap !== null && Math.abs(gap) > 1, claimsPhoto,
-  });
+  const jobs = [];
+  for (let i = 0; i < N; i++) {
+    const full = i === 0;
+    jobs.push(ask(env, mk(i, full), (d) => {
+      const o = parseJson(d);
+      const s = readScores(o);
+      if (!s) return null;
+      if (full) {
+        if (typeof o.why !== "string" || o.why.length < 5) return null;
+        s.why = o.why; s.advice = o.advice; s.concerns = o.concerns;
+      }
+      return s;
+    }));
+  }
+  const rs = await Promise.all(jobs);
+  const ok = rs.filter((r) => r.v).map((r) => r.v);
+  if (!ok.length) return { error: "upstream_" + ((rs[0] && rs[0].fail) || 0) };
+  const text = ok.find((s) => typeof s.why === "string") || null;
+  const m = {};
+  for (const k of SCORE_KEYS) m[k] = median(ok.map((s) => s[k]));
+  let S = 0;
+  for (const k of SCORE_KEYS) S += WEIGHTS[k] * m[k];
+  S = r1(S);
+  const pct = Math.round(pctOf(S) * 10) / 10;
+  const tier = tierOfScore(pct);
+
+  const ov = ok.map((s) => s.overall), spread = Math.max.apply(null, ov) - Math.min.apply(null, ov);
+  let conf = Math.round(median(ok.map((s) => CONF_N[s.confidence])));
+  if (!p.img) conf = Math.min(conf, 1);
+  if (p.qaLines.length >= 3 || p.lowRel >= 4) conf = Math.min(conf, 1);
+  if (ok.length > 1 && spread >= 2) conf = 0; else if (ok.length > 1 && spread >= 1.5) conf = Math.min(conf, 1);
+  const clean = (a, n, l) => (Array.isArray(a) ? a.filter((x) => typeof x === "string" && x.trim()).slice(0, n).map((x) => x.slice(0, l)) : []);
+  const concerns = clean(text && text.concerns, 3, 200);
+  if (ok.length > 1 && spread >= 1.5) concerns.push("Проходы ИИ заметно разошлись в оценке, результат менее надёжен.");
+  return {
+    tier, score: pct, why: text ? text.why.slice(0, 1200) : "Развёрнутый разбор получить не удалось, оценка посчитана по структуре лица.",
+    advice: clean(text && text.advice, 4, 300), concerns: concerns.slice(0, 3), confidence: CONF_S[conf], samples: ok.length,
+  };
 }
 
 async function chat(req, env, ctx) {
