@@ -544,7 +544,37 @@ html.tt,html.tt *,html.tt *::before,html.tt *::after{transition:background-color
 *,*::before,*::after{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 .b.a,.b.a *{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
-</style></head>
+</style><style id="qa-css">
+.wbox{width:100%;text-align:left;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:18px;padding:12px 14px;margin-top:8px}
+.wbox ul{margin:6px 0 0;padding-left:18px;color:var(--ink);font-size:13.5px}
+.conf{width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px 14px;margin-top:10px;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.conf b{font-size:14px}.conf span{color:var(--ink)}.conf .hint2{color:var(--muted)}
+.conf.c-high b{color:var(--good)}.conf.c-mid b{color:var(--warn)}.conf.c-low b{color:var(--bad)}
+.pm{font:500 11px var(--font-mono);color:var(--muted);margin-left:4px;white-space:nowrap}
+.dgov{position:fixed;inset:0;z-index:60;background:#000;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);animation:fade .25s ease both}
+.dgov[hidden]{display:none!important}
+.dghead{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex:none}
+.dghead>b{font:700 13px var(--font-mono);letter-spacing:.06em;text-transform:uppercase}
+.dgtabs{display:flex;gap:6px;flex:1;overflow-x:auto}
+.dgtabs button{font:600 12px var(--font-body);color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;white-space:nowrap}
+.dgtabs button.on{color:#000;background:#fff;border-color:#fff}
+.dgbody{flex:1;overflow:auto;padding:12px;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.dgctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;font-size:12.5px}
+.dgctl input[type=checkbox]{accent-color:#fff}
+.dgctl label{display:flex;gap:4px;align-items:center;color:var(--ink)}
+.dgctl input[type=number]{width:92px;height:36px;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 8px;font:500 13px var(--font-mono)}
+.dgcv{display:block;border:1px solid var(--line);border-radius:12px;touch-action:none;background:#000;max-width:100%}
+.dginfo{margin:8px 0;font:500 12px var(--font-mono);color:var(--ink);min-height:34px}
+.dgsc{overflow-x:auto}
+.dgt{border-collapse:collapse;width:100%;font:500 11.5px var(--font-mono)}
+.dgt th,.dgt td{border-bottom:1px solid rgba(255,255,255,.12);padding:6px 6px;text-align:left;vertical-align:top;white-space:nowrap}
+.dgt tr[data-k]{cursor:pointer}.dgt small{color:var(--muted);font-family:var(--font-body)}
+.dgm{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px}
+.dgmh{display:flex;justify-content:space-between;gap:8px}
+.dgf{font:500 11.5px/1.5 var(--font-mono);color:#d8d8d8;word-break:break-word}
+.dgpre{margin:6px 0 0;font:500 11px/1.4 var(--font-mono);color:#d8d8d8;white-space:pre-wrap;word-break:break-all;max-height:260px;overflow:auto}
+</style>
+</head>
 <body>
 <div class="bg"></div>
 <div class="app" id="app">
@@ -592,6 +622,7 @@ input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:d
         <div class="toolbar" id="toolbar">
           <button class="btn sm gold" id="meshBtn" type="button" hidden>Авто-точки</button>
           <button class="btn sm" id="aiBtn" type="button" hidden>Точки через ИИ</button>
+          <button class="btn sm" id="dgBtn" type="button" hidden>Диагностика</button>
           <button class="btn sm" id="aiStop" type="button" hidden>Стоп</button>
           <button class="btn sm" id="undo" type="button" hidden>Назад на точку</button>
           <button class="btn sm" id="mtog" type="button" hidden>Скрыть сетку</button>
@@ -636,6 +667,12 @@ input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:d
 <div class="camov" id="camov" hidden>
   <div class="camwrap"><video id="camVideo" playsinline muted autoplay></video><div class="guide"></div><div class="hint3">Лицо в овале, строго анфас. Телефон на уровне глаз.</div><button class="btn sm" id="camMir" type="button" style="position:absolute;right:12px;bottom:12px;padding:8px 14px">Зеркало</button></div>
   <div class="cambar"><button class="btn sm" id="camCancel" type="button">Отмена</button><button class="shutter" id="camShot" type="button" aria-label="Снять"></button><button class="btn sm" id="camFlip" type="button">Камера</button></div>
+</div>
+<div class="dgov" id="dgov" hidden>
+  <div class="dghead"><b>Диагностика</b>
+    <div class="dgtabs" id="dgtabs"><button type="button" data-t="photo" class="on">Фото</button><button type="button" data-t="pts">Точки</button><button type="button" data-t="meas">Замеры</button><button type="button" data-t="qa">Качество</button><button type="button" data-t="data">ИИ и данные</button></div>
+    <button class="btn sm" id="dgclose" type="button">Закрыть</button></div>
+  <div class="dgbody" id="dgbody"></div>
 </div>
 <div class="toast" id="msg" hidden></div>
 
@@ -708,7 +745,12 @@ function s10(x){return Math.round(x/10);}
 function tierIdx(o){var k=0;TIERS.forEach(function(t,i){if(o>=t[0])k=i;});return k;}
 function scoreOf(v,ideal,tol){var d=v<ideal[0]?ideal[0]-v:(v>ideal[1]?v-ideal[1]:0);return d===0?100:100*Math.pow(Math.max(0,1-d/tol),1.4);}
 function rescore(r){var sw=0,acc=0;for(var i=0;i<SPEC.length;i++){var sp=SPEC[i],v=r&&r[sp.id];if(typeof v!=='number'||!isFinite(v))return null;sw+=sp.w;acc+=sp.w*scoreOf(v,sp.ideal,sp.tol);}var o=calibrate(acc/sw);return {o:o,tier:tierOf(o)};}
-function analyze(pts){
+var PAIRS=[['pupL','pupR'],['medL','medR'],['latL','latR'],['zygL','zygR'],['goL','goR'],['mouL','mouR'],['alL','alR']];
+var ERR_ORDER='Точки расставлены в неверном порядке или перепутаны стороны. Проверьте зрачки (левый на фото слева), линию роста волос, подбородок и губы.';
+/* Чистая геометрия: координаты 21 точки -> сырые замеры и промежуточные величины. Никакого округления. */
+function geom(pts){
+  if(!pts||pts.length<PTS.length)return {error:'Расставлены не все точки.'};
+  for(var k=0;k<PTS.length;k++){var pk=pts[k];if(!pk||!isFinite(pk.x)||!isFinite(pk.y))return {error:'Некорректные координаты точки «'+PTS[k].name+'».'};}
   var g=function(id){return pts[IDX[id]];};
   var a=g('pupL'),b=g('pupR');
   var th=Math.atan2(b.y-a.y,b.x-a.x),c=Math.cos(th),s=Math.sin(th);
@@ -719,13 +761,14 @@ function analyze(pts){
   var t1=q.glab.y-q.hair.y,t2=q.sub.y-q.glab.y,t3=q.men.y-q.sub.y;
   var up=q.sto.y-q.ls.y,lo=q.li.y-q.sto.y,uf=q.ls.y-q.glab.y,ul=q.sto.y-q.sub.y,ll=q.men.y-q.sto.y;
   var pm=q.sto.y-q.pupL.y;
-  var vals=[ipd,zw,ic,ew,aw,mw,jw,t1,t2,t3,up,lo,uf,ul,ll,pm];
-  for(var i=0;i<vals.length;i++){if(!(vals[i]>0.0001))return {error:'Точки расставлены в неверном порядке или перепутаны стороны. Проверьте зрачки (левый на фото слева), линию роста волос, подбородок и губы.'};}
-  var pairs=[['pupL','pupR'],['medL','medR'],['latL','latR'],['zygL','zygR'],['goL','goR'],['mouL','mouR'],['alL','alR']];
-  var x0=0;pairs.forEach(function(p){x0+=(q[p[0]].x+q[p[1]].x)/2;});x0/=pairs.length;
-  var h=0;pairs.forEach(function(p){var dl=x0-q[p[0]].x,dr=q[p[1]].x-x0;h+=Math.abs(dl-dr)/Math.max(1e-6,dl+dr);});h/=pairs.length;
+  /* вертикальный порядок: волосы < межбровье < зрачки < основание носа < верх губы; низ губы < подбородок */
+  var ord=[q.pupL.y-q.glab.y,q.sub.y-q.pupL.y,q.ls.y-q.sub.y,q.men.y-q.li.y];
+  var vals=[ipd,zw,ic,ew,aw,mw,jw,t1,t2,t3,up,lo,uf,ul,ll,pm].concat(ord);
+  for(var i=0;i<vals.length;i++){if(!(vals[i]>0.0001))return {error:ERR_ORDER};}
+  var x0=0;PAIRS.forEach(function(p){x0+=(q[p[0]].x+q[p[1]].x)/2;});x0/=PAIRS.length;
+  var h=0;PAIRS.forEach(function(p){var dl=x0-q[p[0]].x,dr=q[p[1]].x-x0;h+=Math.abs(dl-dr)/Math.max(1e-6,dl+dr);});h/=PAIRS.length;
   var m=0,mids=['hair','glab','sub','sto','men','ls','li'];mids.forEach(function(id){m+=Math.abs(q[id].x-x0)/zw;});m/=mids.length;
-  var vv=0,vp=pairs.slice(1);vp.forEach(function(p){vv+=Math.abs(q[p[0]].y-q[p[1]].y)/(t2+t3);});vv/=vp.length;
+  var vv=0,vp=PAIRS.slice(1);vp.forEach(function(p){vv+=Math.abs(q[p[0]].y-q[p[1]].y)/(t2+t3);});vv/=vp.length;
   var sym=Math.max(0,Math.min(100,100*(1-(h+m+vv))));
   var tot=t1+t2+t3,p1=100*t1/tot,p2=100*t2/tot,p3=100*t3/tot;
   var dev=Math.max(Math.abs(p1-33.333),Math.abs(p2-33.333),Math.abs(p3-33.333));
@@ -733,9 +776,16 @@ function analyze(pts){
   var tr=Math.atan2(q.medR.y-q.latR.y,Math.abs(q.latR.x-q.medR.x))*180/Math.PI;
   var tilt=(tl+tr)/2;
   var raw={sym:sym,thirds:dev,lower:ll/ul,canthal:tilt,fwhr:zw/uf,jaw:jw/zw,mid:ipd/pm,eyes:ic/ew,nose:aw/ic,mouth:mw/aw,lips:lo/up,wh:zw/(t2+t3)};
+  var G={ipd:ipd,zw:zw,ic:ic,ew:ew,aw:aw,mw:mw,jw:jw,t1:t1,t2:t2,t3:t3,t23:t2+t3,up:up,lo:lo,uf:uf,ul:ul,ll:ll,pm:pm,p1:p1,p2:p2,p3:p3,h:h,m:m,vv:vv,tl:tl,tr:tr,x0:x0};
+  return {raw:raw,G:G,th:th,q:q};
+}
+function analyze(pts){
+  var gm=geom(pts);if(gm.error)return {error:gm.error};
+  var raw=gm.raw,G=gm.G,th=gm.th,sym=raw.sym,tilt=raw.canthal;
+  /* «Трети» показываются с одним знаком после запятой: округление до целых давало сумму 99 или 101. */
   var disp={
     sym:sym.toFixed(1)+'%',
-    thirds:Math.round(p1)+' / '+Math.round(p2)+' / '+Math.round(p3),
+    thirds:G.p1.toFixed(1)+' / '+G.p2.toFixed(1)+' / '+G.p3.toFixed(1),
     lower:'1 : '+raw.lower.toFixed(1),
     canthal:(tilt>=0?'+':'')+tilt.toFixed(1)+'°',
     fwhr:raw.fwhr.toFixed(2),jaw:raw.jaw.toFixed(2),mid:raw.mid.toFixed(2),eyes:raw.eyes.toFixed(2),
@@ -750,8 +800,305 @@ function analyze(pts){
   });
   var rawAll=acc/sw,overall=calibrate(rawAll),tier=tierOf(overall);
   items.forEach(function(it){it.gain=calibrate(rawAll+it.spec.w*(100-it.score)/sw)-overall;});
-  return {items:items,overall:overall,raw:rawAll,tier:tier,psl:1+7*overall/100,theta:th};
+  return {items:items,overall:overall,raw:rawAll,tier:tier,psl:1+7*overall/100,theta:th,geo:gm};
 }
+/* ===================================================================
+   Контроль качества, оценка погрешности и сопоставление точек сетки.
+   Чистые функции без DOM: их можно гонять в Node (см. тесты).
+   =================================================================== */
+/* Допущение о разбросе положения каждой точки, в долях межзрачкового расстояния (IPD).
+   Это НЕ измеренная точность FaceMesh, а заданная модель шума: контурные точки (скулы, челюсть)
+   и особенно «линия роста волос» определяются заметно хуже, чем уголки глаз и зрачки.
+   Если доступна проверка на зеркальной копии кадра, берётся большее из допущения и реального расхождения. */
+var NOISE={hair:.10,glab:.025,sub:.02,men:.03,pupL:.012,pupR:.012,medL:.015,medR:.015,latL:.015,latR:.015,
+  zygL:.04,zygR:.04,goL:.05,goR:.05,alL:.02,alR:.02,mouL:.02,mouR:.02,ls:.02,sto:.015,li:.02};
+/* Правдоподобные границы сырых замеров. Значение за границей почти всегда значит, что точка сбита. Те же числа в worker.js. */
+var HARD={sym:[0,100],thirds:[0,33.4],lower:[.6,6],canthal:[-25,35],fwhr:[1,3.2],jaw:[.45,1.15],wh:[.6,1.9],mid:[.5,2],eyes:[.55,1.8],nose:[.55,2],mouth:[.9,2.8],lips:[.4,4.5]};
+/* Какие точки и отрезки участвуют в каждом замере (для диагностики и объяснения погрешности). */
+var MEAS={
+ sym:{f:'100·(1 − (h + m + v)); h: разница половин ширины пар, m: отклонение осевых точек, v: разница высот пар',pts:['pupL','pupR','medL','medR','latL','latR','zygL','zygR','goL','goR','mouL','mouR','alL','alR','hair','glab','sub','sto','men','ls','li'],segs:[['hair','men'],['zygL','zygR']],parts:['h','m','vv']},
+ thirds:{f:'max |100·tᵢ/(t₁+t₂+t₃) − 33.33|; t₁ лоб, t₂ середина, t₃ низ',pts:['hair','glab','sub','men'],segs:[['hair','glab'],['glab','sub'],['sub','men']],parts:['t1','t2','t3','p1','p2','p3']},
+ lower:{f:'(men − sto) / (sto − sub)',pts:['sub','sto','men'],segs:[['sub','sto'],['sto','men']],parts:['ul','ll']},
+ canthal:{f:'среднее atan2(Δy, Δx) от внутреннего к внешнему уголку, по двум глазам',pts:['medL','latL','medR','latR'],segs:[['medL','latL'],['medR','latR']],parts:['tl','tr']},
+ fwhr:{f:'zw / uf; zw ширина скул, uf высота межбровье → верх губы',pts:['zygL','zygR','glab','ls'],segs:[['zygL','zygR'],['glab','ls']],parts:['zw','uf']},
+ jaw:{f:'jw / zw; jw расстояние между углами челюсти',pts:['goL','goR','zygL','zygR'],segs:[['goL','goR'],['zygL','zygR']],parts:['jw','zw']},
+ wh:{f:'zw / (t₂ + t₃)',pts:['zygL','zygR','glab','men'],segs:[['zygL','zygR'],['glab','men']],parts:['zw','t23']},
+ mid:{f:'ipd / (sto.y − зрачок.y)',pts:['pupL','pupR','sto'],segs:[['pupL','pupR'],['pupL','sto']],parts:['ipd','pm']},
+ eyes:{f:'ic / ew; ic между внутренними уголками, ew ширина глаза',pts:['medL','medR','latL','latR'],segs:[['medL','medR'],['latL','medL'],['medR','latR']],parts:['ic','ew']},
+ nose:{f:'aw / ic; aw ширина носа по крыльям',pts:['alL','alR','medL','medR'],segs:[['alL','alR'],['medL','medR']],parts:['aw','ic']},
+ mouth:{f:'mw / aw; mw ширина рта',pts:['mouL','mouR','alL','alR'],segs:[['mouL','mouR'],['alL','alR']],parts:['mw','aw']},
+ lips:{f:'(li − sto) / (sto − ls)',pts:['ls','sto','li'],segs:[['ls','sto'],['sto','li']],parts:['up','lo']}
+};
+/* Из каких точек сетки (468/478) берётся каждая ключевая точка. */
+var MESHSRC={hair:'10',glab:'9',sub:'2',men:'152',pupL:'468 (радужка) или середина 33–133',pupR:'473 (радужка) или середина 263–362',
+  medL:'133',latL:'33',medR:'362',latR:'263',zygL:'234',zygR:'454',goL:'172',goR:'397',alL:'129',alR:'358',mouL:'61',mouR:'291',ls:'0',sto:'середина 13–14',li:'17'};
+/* Зеркальные пары индексов сетки (нужны для проверки на отражённом кадре) и осевые точки. */
+var MIRROR={33:263,263:33,133:362,362:133,234:454,454:234,172:397,397:172,129:358,358:129,61:291,291:61,468:473,473:468,10:10,9:9,2:2,152:152,0:0,13:13,14:14,17:17};
+
+function meshKeyPoints(M){
+  var mid=function(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};};
+  var iris=!!(M[468]&&M[473]);
+  var map={hair:M[10],glab:M[9],sub:M[2],men:M[152],
+    pupL:iris?M[468]:mid(M[33],M[133]),pupR:iris?M[473]:mid(M[263],M[362]),
+    medL:M[133],latL:M[33],medR:M[362],latR:M[263],
+    zygL:M[234],zygR:M[454],goL:M[172],goR:M[397],alL:M[129],alR:M[358],
+    mouL:M[61],mouR:M[291],ls:M[0],sto:mid(M[13],M[14]),li:M[17]};
+  var swapped=[];
+  PAIRS.forEach(function(p){
+    var A=map[p[0]],B=map[p[1]];
+    if(A&&B&&A.x>B.x){map[p[0]]=B;map[p[1]]=A;swapped.push(p[0]+'/'+p[1]);}
+  });
+  return {P:PTS.map(function(p){var o=map[p.id];return o?{x:o.x,y:o.y}:{x:NaN,y:NaN};}),swapped:swapped,iris:iris};
+}
+/* Сетка отражённого кадра (координаты F в пикселях отражённого кадра) -> «виртуальная» сетка в координатах оригинала. */
+function mirrorMesh(F,W){
+  var out=[];
+  for(var k in MIRROR){var s=F[MIRROR[k]];if(s&&isFinite(s.x)&&isFinite(s.y))out[+k]={x:W-s.x,y:s.y};}
+  return out;
+}
+/* Расхождение двух независимых расстановок ключевых точек, в долях IPD. */
+function stabilityOf(P1,P2){
+  var g=geom(P1),ipd=g.error?0:g.G.ipd;
+  if(!(ipd>0))return null;
+  var per={},sum=0,mx=0,worst='';
+  PTS.forEach(function(p,i){
+    var d=Math.hypot(P1[i].x-P2[i].x,P1[i].y-P2[i].y)/ipd;
+    per[p.id]=d;sum+=d*d;if(d>mx){mx=d;worst=p.id;}
+  });
+  var rms=Math.sqrt(sum/PTS.length),meas={};
+  var g2=geom(P2);
+  if(!g2.error)SPEC.forEach(function(sp){meas[sp.id]=g2.raw[sp.id]-g.raw[sp.id];});
+  return {rms:rms,max:mx,worst:worst,per:per,meas:meas};
+}
+/* Среднее двух проходов там, где они согласуются; иначе остаётся первый. */
+function mergePasses(P1,P2,ipd){
+  var avg=0,kept=[];
+  var P=P1.map(function(p,i){
+    var id=PTS[i].id,lim=(id==='hair'?.25:.12)*ipd,d=Math.hypot(p.x-P2[i].x,p.y-P2[i].y);
+    if(d<=lim){avg++;return {x:(p.x+P2[i].x)/2,y:(p.y+P2[i].y)/2};}
+    kept.push(id);return {x:p.x,y:p.y};
+  });
+  return {P:P,averaged:avg,kept:kept};
+}
+
+/* ---- Поза головы ---- */
+function median(a){var s=a.slice().sort(function(x,y){return x-y;}),n=s.length;return n?(n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2):NaN;}
+var DEG=180/Math.PI,NOSE_PROTRUSION=.30;
+/* roll: наклон в плоскости кадра (компенсируется в analyze). yaw: поворот влево-вправо. pitch: вверх-вниз.
+   yaw оценивается по двум признакам: смещению кончика носа относительно середины лица и разнице глубины (z) парных точек сетки.
+   pitch оценивается только по z сетки и грубее всего: у нейросети z приблизительная. */
+function poseOf(P,M){
+  var pl=P[IDX.pupL],pr=P[IDX.pupR],th=Math.atan2(pr.y-pl.y,pr.x-pl.x);
+  var o={roll:th*DEG,yaw:NaN,pitch:NaN,dx:NaN,yawN:NaN,yawZ:NaN};
+  if(!M||!M[1]||!M[234]||!M[454])return o;
+  /* все признаки считаются в кадре, повёрнутом по линии зрачков: иначе крен голову «поворачивает» */
+  var c=Math.cos(th),s=Math.sin(th);
+  var R=function(i){var p=M[i];return p?{x:p.x*c+p.y*s,y:-p.x*s+p.y*c,z:p.z}:null;};
+  var n1=R(1),c1=R(234),c2=R(454);
+  var cw=c2.x-c1.x;
+  if(Math.abs(cw)>1e-6){
+    o.dx=(n1.x-(c1.x+c2.x)/2)/Math.abs(cw);
+    o.yawN=Math.asin(Math.max(-1,Math.min(1,o.dx/NOSE_PROTRUSION)))*DEG;
+  }
+  var zs=[];
+  [[234,454],[33,263],[133,362],[172,397],[61,291]].forEach(function(p){
+    var a=R(p[0]),b=R(p[1]);
+    if(a&&b&&isFinite(a.z)&&isFinite(b.z)){var dxp=b.x-a.x;if(Math.abs(dxp)>1e-6)zs.push(Math.atan2(b.z-a.z,Math.abs(dxp))*DEG);}
+  });
+  if(zs.length>=3)o.yawZ=median(zs);
+  var ys=[];if(isFinite(o.yawN))ys.push(Math.abs(o.yawN));if(isFinite(o.yawZ))ys.push(Math.abs(o.yawZ));
+  if(ys.length)o.yaw=ys.reduce(function(a,b){return a+b;},0)/ys.length;
+  var t=R(10),m=R(152);
+  if(t&&m&&isFinite(t.z)&&isFinite(m.z)){
+    var dy=m.y-t.y;
+    if(dy>1e-6)o.pitch=Math.atan2(m.z-t.z,dy)*DEG;
+  }
+  return o;
+}
+
+/* ---- Освещение и резкость по серому изображению лица (массив 0..255, размер w×h) ---- */
+function lumaStats(g,w,h){
+  var n=w*h,sum=0,sq=0,dark=0,bright=0,i,x,y,sl=0,sr=0,cl=0,cr=0;
+  for(i=0;i<n;i++){var v=g[i];sum+=v;sq+=v*v;if(v<12)dark++;if(v>243)bright++;}
+  var mean=sum/n,std=Math.sqrt(Math.max(0,sq/n-mean*mean));
+  for(y=0;y<h;y++)for(x=0;x<w;x++){var q=g[y*w+x];if(x<w/2){sl+=q;cl++;}else{sr+=q;cr++;}}
+  var ml=cl?sl/cl:0,mr=cr?sr/cr:0,lr=(ml+mr)>0?Math.abs(ml-mr)/(ml+mr):0;
+  var ls=0,lq=0,c=0;
+  for(y=1;y<h-1;y++)for(x=1;x<w-1;x++){
+    var L=4*g[y*w+x]-g[y*w+x-1]-g[y*w+x+1]-g[y*w+x-w]-g[y*w+x+w];ls+=L;lq+=L*L;c++;
+  }
+  var lm=c?ls/c:0,lap=c?lq/c-lm*lm:0;
+  return {mean:mean,std:std,darkFrac:dark/n,brightFrac:bright/n,lr:lr,lap:lap};
+}
+
+/* ---- Сводный контроль качества ----
+   ctx: {pts (21 точка), M (сетка в пикселях с z или null), W,H (размер кадра), luma (lumaStats или null), stab (stabilityOf или null)}
+   Возвращает уровни 'bad' (числа недостоверны, тир не показывается) и 'warn' (показывается с оговоркой). */
+function qaReport(ctx){
+  var items=[],P=ctx.pts,M=ctx.M||null,W=ctx.W,H=ctx.H;
+  var add=function(lvl,code,text,val){items.push({lvl:lvl,code:code,text:text,val:val==null?null:val});};
+  var out={items:items,bad:[],warn:[],badCodes:[],warnCodes:[],level:'ok',pose:null,metrics:{},hasMesh:!!M};
+  if(!P||P.length<PTS.length){add('bad','points','расставлены не все точки');return fin(out);}
+  var g=geom(P);
+  if(g.error){add('bad','order',g.error);return fin(out);}
+  var ipd=g.G.ipd,m=out.metrics;
+  m.ipdPx=ipd;m.ipdFrac=ipd/Math.max(W,H);
+  /* размер лица */
+  if(ipd<40)add('bad','tiny','лицо слишком маленькое в кадре (межзрачковое расстояние '+Math.round(ipd)+' px): точки определяются с большой ошибкой, подойдите ближе или обрежьте фото',ipd);
+  else if(ipd<70)add('warn','small','лицо небольшое в кадре (межзрачковое расстояние '+Math.round(ipd)+' px): погрешность точек выше, лучше снимать крупнее',ipd);
+  /* выход за кадр */
+  var out_=[],tolx=.005*W,toly=.005*H;
+  PTS.forEach(function(p,i){var q=P[i];if(q.x<-tolx||q.x>W+tolx||q.y<-toly||q.y>H+toly)out_.push(p.id);});
+  if(out_.length)add('bad','cropped','лицо обрезано краем кадра: точки вне снимка ('+out_.join(', ')+')',out_.length);
+  else if(P[IDX.hair].y<.015*H)add('warn','hair_edge','лоб у самого края кадра: верхняя точка может быть сдвинута',P[IDX.hair].y/H);
+  /* правдоподобие замеров */
+  var impl=[];
+  SPEC.forEach(function(sp){var v=g.raw[sp.id],r=HARD[sp.id];if(!(v>=r[0]&&v<=r[1]))impl.push(sp.name);});
+  if(impl.length)add('bad','implausible','значения вне правдоподобного диапазона ('+impl.join(', ')+'): вероятно, одна из точек сбита, проверьте расстановку',impl.length);
+  /* поворот в плоскости кадра */
+  var po=poseOf(P,M);out.pose=po;
+  if(Math.abs(po.roll)>35)add('warn','roll','сильный наклон головы в плоскости кадра ('+po.roll.toFixed(0)+'°): расчёт его компенсирует, но точки на таком кадре менее точны',po.roll);
+  if(M){
+    var inv=0,n=M.length;
+    if(n<468)inv=468-n;
+    else for(var i=0;i<468;i++){var s=M[i];if(!s||!isFinite(s.x)||!isFinite(s.y))inv++;}
+    if(inv>0)add('bad','mesh_invalid','в данных сетки есть пропущенные или некорректные точки ('+inv+')',inv);
+    var dd=function(a,b){return Math.hypot(M[a].x-M[b].x,M[a].y-M[b].y);};
+    if(!inv){
+      /* поворот */
+      if(isFinite(po.yaw)){
+        if(po.yaw>12)add('bad','yaw_bad','голова повёрнута примерно на '+po.yaw.toFixed(0)+'°: симметрия и ширина глаз искажаются, нужен снимок строго анфас',po.yaw);
+        else if(po.yaw>6)add('warn','yaw_warn','голова слегка повёрнута (примерно '+po.yaw.toFixed(0)+'°): симметрия и ширина глаз считаются с заметной ошибкой',po.yaw);
+      }
+      if(isFinite(po.pitch)){
+        var ap=Math.abs(po.pitch);
+        if(ap>22)add('bad','pitch_bad','голова наклонена вверх или вниз (примерно '+ap.toFixed(0)+'°): трети лица и кантальный наклон искажаются',ap);
+        else if(ap>12)add('warn','pitch_warn','голова немного наклонена вверх или вниз (примерно '+ap.toFixed(0)+'°): кантальный наклон и трети искажаются',ap);
+      }
+      /* глаза */
+      var earL=dd(159,145)/dd(33,133),earR=dd(386,374)/dd(362,263),ear=Math.min(earL,earR);
+      m.ear=ear;m.earL=earL;m.earR=earR;
+      if(ear<.18)add('bad','eyes_closed','глаза прикрыты или зажмурены: зрачки и кантальный наклон считаются неверно',ear);
+      /* направление взгляда: смещение радужки от середины глаза */
+      if(M[468]&&M[473]){
+        var gl=(M[468].x-(M[33].x+M[133].x)/2)/Math.abs(M[133].x-M[33].x||1),gr=(M[473].x-(M[263].x+M[362].x)/2)/Math.abs(M[362].x-M[263].x||1);
+        m.gazeL=gl;m.gazeR=gr;
+        if(Math.max(Math.abs(gl),Math.abs(gr))>.22)add('warn','gaze','взгляд направлен в сторону: зрачки и «середина лица» считаются со сдвигом',Math.max(Math.abs(gl),Math.abs(gr)));
+      }
+      /* рот */
+      var mo=dd(13,14)/dd(61,291);m.mouthOpen=mo;
+      if(mo>.12)add('bad','mouth_open','рот открыт: нижняя треть и губы считаются неверно',mo);
+      else if(mo>.06)add('warn','mouth_slight','рот приоткрыт: губы и нижняя треть считаются с ошибкой',mo);
+      /* близкая съёмка */
+      var xs=[],ys=[];for(i=0;i<468;i++){xs.push(M[i].x);ys.push(M[i].y);}
+      var fw=(Math.max.apply(null,xs)-Math.min.apply(null,xs))/W,fh=(Math.max.apply(null,ys)-Math.min.apply(null,ys))/H;
+      m.faceW=fw;m.faceH=fh;
+      if(fw>.78||fh>.85)add('warn','close','лицо занимает почти весь кадр: если снимали с руки на малом расстоянии, перспектива искажает нос, лоб и ширину лица. Снимайте с 1,5–2 м и приближайте',Math.max(fw,fh));
+    }
+  }else{
+    add('warn','no_mesh','точки заданы вручную или через ИИ: проверка поворота головы, глаз и рта недоступна, контроль качества ограничен',null);
+  }
+  /* свет и резкость */
+  var L=ctx.luma;
+  if(L){
+    m.luma=L;
+    if(L.mean<45)add('warn','dark','лицо снято слишком тёмным (средняя яркость '+Math.round(L.mean)+'): контуры плохо видны, точки менее точны',L.mean);
+    else if(L.mean>215)add('warn','bright','лицо пересвечено (средняя яркость '+Math.round(L.mean)+'): контуры плохо видны, точки менее точны',L.mean);
+    if(L.std<22)add('warn','flat','мало контраста на лице: точки контура определяются менее точно',L.std);
+    if(L.lap<40)add('warn','blur','снимок размыт или сильно сжат: точки определяются менее точно',L.lap);
+    if(L.lr>.2)add('warn','side_light','свет падает сбоку: одна половина лица заметно темнее, симметрия считается с ошибкой',L.lr);
+  }
+  /* устойчивость между двумя проходами сетки */
+  var S=ctx.stab;
+  if(S){
+    m.stab=S.rms;
+    if(S.rms>.08)add('bad','unstable','на зеркальной копии снимка сетка встала иначе (среднее расхождение '+(S.rms*100).toFixed(1)+'% межзрачкового расстояния): определение лица нестабильно',S.rms);
+    else if(S.rms>.03)add('warn','weak_stab','на зеркальной копии снимка точки сместились (среднее расхождение '+(S.rms*100).toFixed(1)+'% межзрачкового расстояния): положение точек нестабильно',S.rms);
+  }
+  return fin(out);
+  function fin(o){
+    items.forEach(function(it){
+      if(it.lvl==='bad'){o.bad.push(it.text);o.badCodes.push(it.code);}
+      else{o.warn.push(it.text);o.warnCodes.push(it.code);}
+    });
+    o.level=o.bad.length?'bad':(o.warn.length?'warn':'ok');
+    return o;
+  }
+}
+
+/* ---- Погрешность: случайное смещение точек и повторный расчёт (результат детерминирован: зерно фиксировано) ---- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){var u=1-r(),v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function pctl(sorted,p){return sorted[Math.max(0,Math.min(sorted.length-1,Math.round(p*(sorted.length-1))))];}
+function sdOf(a){var n=a.length;if(n<2)return 0;var m=0,i;for(i=0;i<n;i++)m+=a[i];m/=n;var s=0;for(i=0;i<n;i++)s+=(a[i]-m)*(a[i]-m);return Math.sqrt(s/(n-1));}
+function sigmaFor(ipd,extra){return PTS.map(function(p){var f=NOISE[p.id];if(extra&&extra[p.id]!=null)f=Math.max(f,extra[p.id]);return f*ipd;});}
+function uncertainty(pts,opt){
+  opt=opt||{};
+  var g0=geom(pts);if(g0.error)return null;
+  var N=opt.n||300,rnd=mulberry32(opt.seed||20240607),sig=sigmaFor(g0.G.ipd,opt.extra);
+  var mv={},ms={},ov=[],tc={},ok=0,i,k,sp;
+  SPEC.forEach(function(s){mv[s.id]=[];ms[s.id]=[];});
+  TIERS.forEach(function(t){tc[t[1]]=0;});
+  for(k=0;k<N;k++){
+    var Q=pts.map(function(p,j){return {x:p.x+sig[j]*gauss(rnd),y:p.y+sig[j]*gauss(rnd)};});
+    var g=geom(Q);if(g.error)continue;
+    ok++;var sw=0,acc=0;
+    for(i=0;i<SPEC.length;i++){sp=SPEC[i];var v=g.raw[sp.id],sc=scoreOf(v,sp.ideal,sp.tol);mv[sp.id].push(v);ms[sp.id].push(sc);sw+=sp.w;acc+=sp.w*sc;}
+    var o=calibrate(acc/sw);ov.push(o);tc[tierOf(o)]++;
+  }
+  if(ok<20)return null;
+  var m={};
+  SPEC.forEach(function(s){
+    var a=mv[s.id].slice().sort(function(x,y){return x-y;}),ssd=sdOf(ms[s.id]);
+    m[s.id]={sd:sdOf(mv[s.id]),ssd:ssd,p05:pctl(a,.05),p95:pctl(a,.95),rel:ssd<8?'high':(ssd<18?'mid':'low')};
+  });
+  var os=ov.slice().sort(function(x,y){return x-y;}),probs={},mode='',pm=0;
+  TIERS.forEach(function(t){probs[t[1]]=tc[t[1]]/ok;if(probs[t[1]]>pm){pm=probs[t[1]];mode=t[1];}});
+  /* Показываем 80%-интервал (10–90%). Достоверность по вероятности самого вероятного тира:
+     ≥60% высокая, ≥35% средняя, иначе низкая (при узких тирах и шуме точек это норма, а не ошибка). */
+  var lo=tierOf(pctl(os,.1)),hi=tierOf(pctl(os,.9)),span=tierIdx(pctl(os,.9))-tierIdx(pctl(os,.1))+1;
+  return {n:ok,m:m,o:{sd:sdOf(ov),p05:pctl(os,.05),p10:pctl(os,.1),p50:pctl(os,.5),p90:pctl(os,.9),p95:pctl(os,.95)},tiers:probs,mode:mode,pMode:pm,lo:lo,hi:hi,span:span,
+    conf:pm>=.6?'high':(pm>=.35?'mid':'low'),sig:sig.map(function(s){return s/g0.G.ipd;})};
+}
+/* Чувствительность: вклад каждой точки в погрешность каждого замера (случайно смещаем ТОЛЬКО эту точку с её σ и смотрим разброс замера).
+   Метод Монте-Карло, а не производная: у симметрии есть модуль и излом в нуле, линеаризация там даёт ложный ноль.
+   per1: на сколько в среднем меняется замер при смещении точки на 1% IPD (в долях ширины нормы band). */
+function sensitivity(pts,extra,n){
+  var g0=geom(pts);if(g0.error)return null;
+  n=n||60;
+  var ipd=g0.G.ipd,sig=sigmaFor(ipd,extra),res={},rnd=mulberry32(777);
+  SPEC.forEach(function(sp){res[sp.id]={list:[],varSum:0};});
+  PTS.forEach(function(p,i){
+    var acc={};SPEC.forEach(function(sp){acc[sp.id]=0;});var ok=0;
+    for(var k=0;k<n;k++){
+      var Q=pts.map(function(q){return {x:q.x,y:q.y};});
+      Q[i].x+=sig[i]*gauss(rnd);Q[i].y+=sig[i]*gauss(rnd);
+      var g=geom(Q);if(g.error)continue;ok++;
+      SPEC.forEach(function(sp){var d=g.raw[sp.id]-g0.raw[sp.id];acc[sp.id]+=d*d;});
+    }
+    SPEC.forEach(function(sp){
+      var sd=ok?Math.sqrt(acc[sp.id]/ok):0,bw=sp.ideal[1]-sp.ideal[0],pct=sig[i]/ipd/.01;
+      res[sp.id].list.push({id:p.id,sd:sd,per1:pct>0?sd/pct:0,band:bw>0&&pct>0?sd/pct/bw:0});
+      res[sp.id].varSum+=sd*sd;
+    });
+  });
+  SPEC.forEach(function(sp){
+    var r=res[sp.id];r.sd=Math.sqrt(r.varSum);
+    r.list.forEach(function(x){x.share=r.varSum>0?x.sd*x.sd/r.varSum:0;});
+    r.list.sort(function(a,b){return b.share-a.share;});
+  });
+  return res;
+}
+/* Итоговая достоверность: самый строгий из контроля качества и устойчивости тира. */
+function confidenceOf(qa,uq){
+  if(qa.level==='bad')return 'low';
+  var c=uq?uq.conf:'mid';
+  if(qa.warn.length>=3)return 'low';
+  if(qa.warn.length>=1&&c==='high')c='mid';
+  return c;
+}
+var SDFMT={sym:[1,'%'],thirds:[1,' п.п.'],lower:[2,''],canthal:[1,'°']};
+function fmtSd(id,sd){var f=SDFMT[id]||[2,''];return '±'+sd.toFixed(f[0])+f[1];}
 //</analysis>
 
 (function(){
@@ -779,26 +1126,114 @@ function meshSymmetry(){
   });
   return {score:Math.max(0,Math.min(100,100*(1-4*sum/SYMP.length))),list:list};
 }
-function qualityIssues(){
-  var out=[];
-  if(!meshAll||mode==='demo')return out;
-  var M=meshAll,d=function(a,b){return Math.hypot(M[a].x-M[b].x,M[a].y-M[b].y);};
-  var ear=(d(159,145)/d(33,133)+d(386,374)/d(362,263))/2;
-  if(ear<0.18)out.push('глаза прикрыты или зажмурены: зрачки и кантальный наклон считаются неверно');
-  var xs=M.map(function(p){return p.x;}),ys=M.map(function(p){return p.y;});
-  var fw=(Math.max.apply(null,xs)-Math.min.apply(null,xs))/base.width,fh=(Math.max.apply(null,ys)-Math.min.apply(null,ys))/base.height;
-  if(fw>0.78||fh>0.85)out.push('лицо снято слишком близко и крупно: широкоугольная камера искажает пропорции, снимайте с 1,5–2 м и приближайте');
-  if(d(13,14)/d(61,291)>0.12)out.push('рот открыт');
-  var dx=Math.abs(M[1].x-(M[234].x+M[454].x)/2)/Math.abs(M[454].x-M[234].x);
-  if(dx>0.12)out.push('голова повёрнута: нужен снимок строго анфас');
-  return out;
+var photoId=0,curQA=null,curUQ=null,lastStab=null,lumaCache=null,qaKey='',lastAI=null,lastFlip=null;
+var CONFTXT={high:'высокая',mid:'средняя',low:'низкая'};
+function faceLuma(){
+  if(lumaCache&&lumaCache.id===photoId)return lumaCache.v;
+  var v=null;
+  try{
+    var src=meshAll||pts,x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    src.forEach(function(p){x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y);});
+    x0=Math.max(0,x0);y0=Math.max(0,y0);x1=Math.min(base.width,x1);y1=Math.min(base.height,y1);
+    var w=x1-x0,h=y1-y0;
+    if(w>20&&h>20){
+      var cw=160,ch=Math.max(40,Math.min(240,Math.round(160*h/w)));
+      var c=document.createElement('canvas');c.width=cw;c.height=ch;var g=c.getContext('2d');
+      g.drawImage(base,x0,y0,w,h,0,0,cw,ch);
+      var d=g.getImageData(0,0,cw,ch).data,gr=new Uint8Array(cw*ch);
+      for(var i=0;i<gr.length;i++)gr[i]=Math.round(.299*d[4*i]+.587*d[4*i+1]+.114*d[4*i+2]);
+      v=lumaStats(gr,cw,ch);
+    }
+  }catch(_){v=null;}
+  lumaCache={id:photoId,v:v};return v;
+}
+/* Контроль качества и погрешность для текущих точек. Кэшируется по координатам. */
+function calcQA(){
+  if(mode!=='adjust'||pts.length<N){curQA=null;curUQ=null;return null;}
+  var stab=meshAll?lastStab:null;
+  var key=photoId+'|'+(meshAll?1:0)+'|'+(stab?stab.rms.toFixed(4):'-')+'|'+pts.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1);}).join(';');
+  if(key===qaKey&&curQA)return curQA;
+  var extra=stab?stab.per:null;
+  var qa=qaReport({pts:pts,M:meshAll,W:base.width,H:base.height,luma:faceLuma(),stab:stab});
+  var uq=uncertainty(pts,{extra:extra});
+  qa.conf=confidenceOf(qa,uq);
+  curQA=qa;curUQ=uq;qaKey=key;return qa;
+}
+/* Блокирующие проблемы: при них тир не показывается (как и раньше). Остальное идёт как предупреждения. */
+function qualityIssues(){var q=calcQA();return q?q.bad:[];}
+function qualityWarnings(){var q=calcQA();return q?q.warn:[];}
+function pmHtml(i){var u=curUQ&&curUQ.m[i.spec.id];return u?' <small class="pm">'+fmtSd(i.spec.id,u.sd)+'</small>':'';}
+function relHtml(i){var u=curUQ&&curUQ.m[i.spec.id];return u&&u.rel==='low'?' · неточно':'';}
+function qaBoxHtml(QA){
+  if(!QA)return '';
+  var h='';
+  if(QA.bad.length)h+='<div class="qbox"><b class="err">Проблемы со снимком</b><ul>'+QA.bad.map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul><p class="hint" style="margin-top:6px">Тир не показываю: числа при таком фото недостоверны. Переснимите.</p></div>';
+  if(QA.warn.length)h+='<div class="wbox"><b>Что снижает точность</b><ul>'+QA.warn.map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul></div>';
+  return h;
+}
+function confHtml(R,QA,UQ){
+  if(!QA||!UQ||QA.bad.length)return '';
+  var low=SPEC.filter(function(s){return UQ.m[s.id].rel==='low';}).map(function(s){return s.name;});
+  var h='<div class="conf c-'+QA.conf+'"><b>Достоверность: '+CONFTXT[QA.conf]+'</b><span>С учётом погрешности точек самый вероятный тир: '+UQ.mode+' ('+Math.round(UQ.pMode*100)+'%). Диапазон 80%: '+(UQ.lo===UQ.hi?UQ.lo:UQ.lo+'–'+UQ.hi)+', балл '+(UQ.o.p10/10).toFixed(1)+'–'+(UQ.o.p90/10).toFixed(1)+' из 10.</span>';
+  if(low.length)h+='<span>Неточные замеры: '+low.join(', ')+'.</span>';
+  return h+'<span class="hint2">Оценка модельная: учтён заданный разброс положения точек, а не измеренная точность. Тир это условная шкала форумов, а не научное измерение.</span></div>';
+}
+function uqNote(UQ,QA){
+  if(!UQ||!QA||QA.bad.length)return '';
+  return '<p class="hint2">Погрешность: точки сетки определяются с ошибкой, поэтому каждый замер показан с «±». Тиры узкие, и такой сдвиг точек может переводить результат в соседний тир (вероятности: '+TIERS.map(function(t){return UQ.tiers[t[1]]>=.05?t[1]+' '+Math.round(UQ.tiers[t[1]]*100)+'%':'';}).filter(Boolean).join(', ')+').</p>';
+}
+/* ---------- ИИ: данные и согласие на отправку фото ---------- */
+function aiKey(){return 'fm2:'+(window.FMU||'')+'aiPhoto';}
+function aiPhotoOn(){try{return localStorage.getItem(aiKey())==='1';}catch(_){return false;}}
+function photoB64(){
+  var s=Math.min(1,768/Math.max(base.width,base.height)),w=Math.max(1,Math.round(base.width*s)),h=Math.max(1,Math.round(base.height*s));
+  var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(base,0,0,w,h);
+  return (c.toDataURL('image/jpeg',.8).split(',')[1])||'';
+}
+function buildPayload(R,withImage){
+  var ms=meshSymmetry(),raw={},sd={},rel={},QA=curQA,UQ=curUQ;
+  R.items.forEach(function(i){raw[i.spec.id]=i.v;var u=UQ&&UQ.m[i.spec.id];if(u){sd[i.spec.id]=+u.sd.toFixed(4);rel[i.spec.id]=u.rel;}});
+  var p={initData:tgData(),v:CAL.v,raw:raw,meshSym:ms?ms.score:null,gridOverall:R.overall,gridTier:R.tier,sd:sd,rel:rel,
+    qa:{level:QA?QA.level:'ok',conf:QA?QA.conf:'mid',codes:QA?QA.badCodes.concat(QA.warnCodes):[]}};
+  if(withImage){var im=photoB64();if(im)p.image=im;}
+  return p;
+}
+function aiLead(){
+  if(!canVerdict())return 'Второй ИИ оценивает замеры независимо от расчёта.';
+  if(sample)return 'Второй ИИ смотрит только на числа замеров и сам решает, какой это тир. Фото не передаётся.';
+  return aiPhotoOn()
+    ?'ИИ получит сжатое фото лица (JPEG до 768 px, без разметки) и числа замеров с погрешностями. Ваш сервер фото не сохраняет, но оно обрабатывается сервисом Gemini.'
+    :'ИИ получит только числа замеров и их погрешности, без фото: лица он не видит и точки проверить не может. Фото никуда не уходит.';
+}
+function paintAiOpt(){
+  var el=$('aiopt');if(!el)return;
+  if(!canVerdict()||sample){el.innerHTML='';return;}
+  el.innerHTML='<button class="btn wide" data-act="aiphoto" type="button">Отправлять ИИ фото для проверки: '+(aiPhotoOn()?'включено':'выключено')+'</button>';
+  var l=$('aiLead');if(l)l.textContent=aiLead();
+}
+/* Второй проход FaceMesh по зеркальному кадру: независимая оценка тех же 21 точек. Если расходятся, детекция нестабильна. */
+async function flipPass(M,P,W,H,tok){
+  var f=getMesh(false);if(!f)return null;
+  try{if(typeof f.reset==='function')f.reset();}catch(_){}
+  var c=document.createElement('canvas');c.width=W;c.height=H;var g=c.getContext('2d');
+  g.translate(W,0);g.scale(-1,1);g.drawImage(base,0,0);
+  var res=await sendMesh(f,c,25000);
+  if(tok!==meshToken)return null;
+  var l=res&&res.multiFaceLandmarks&&res.multiFaceLandmarks[0];
+  if(!l||l.length<468)return {failed:true};
+  var F=l.map(function(q){return {x:q.x*W,y:q.y*H,z:q.z*W};});
+  var P2=meshKeyPoints(mirrorMesh(F,W)).P;
+  for(var i=0;i<P2.length;i++)if(!isFinite(P2[i].x)||!isFinite(P2[i].y))return {failed:true};
+  var st=stabilityOf(P,P2);if(!st)return null;
+  var gm=geom(P),mg=mergePasses(P,P2,gm.error?1:gm.G.ipd);
+  return {st:st,P:mg.P,P2:P2,averaged:mg.averaged,kept:mg.kept};
 }
 function downloadPng(){
   var R=analyze(currentPoints());if(R.error)return;
   var W=cv.width,H=cv.height,bar=Math.round(W*0.16),c=document.createElement('canvas');c.width=W;c.height=H+bar;
   var g=c.getContext('2d');g.drawImage(cv,0,0);g.fillStyle='#000000';g.fillRect(0,H,W,bar);
   g.fillStyle='#FFFFFF';g.font='800 '+Math.round(bar*.42)+'px sans-serif';g.fillText((qualityIssues().length?'—':R.tier)+' · '+(R.overall/10).toFixed(1)+'/10',W*.04,H+bar*.55);
-  g.fillStyle='#FFFFFF';g.font='500 '+Math.round(bar*.2)+'px sans-serif';g.fillText('≈ PSL '+R.psl.toFixed(1)+' · Фейсметр',W*.04,H+bar*.85);
+  g.fillStyle='#FFFFFF';g.font='500 '+Math.round(bar*.2)+'px sans-serif';var qa_=calcQA();g.fillText('≈ PSL '+R.psl.toFixed(1)+' · Фейсметр'+(qa_&&qa_.conf!=='high'?' · точность: '+CONFTXT[qa_.conf]:''),W*.04,H+bar*.85);
   c.toBlob(function(b){
     if(!b)return;
     try{var f=new File([b],'facemeter.png',{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f]}).catch(function(){});return;}}catch(_){}
@@ -849,7 +1284,7 @@ $('bBack').addEventListener('click',function(){go(page-1);});
   },{passive:true});
 })();
 function resetAll(){
-  pts=[];cur=0;mode='demo';aim=null;meshAll=null;meshLayer=null;verdict=null;meshToken++;anim=false;resultsOk=false;curR=null;
+  pts=[];cur=0;mode='demo';aim=null;meshAll=null;meshLayer=null;verdict=null;meshToken++;anim=false;resultsOk=false;curR=null;lastStab=null;lastFlip=null;qaKey='';curQA=null;curUQ=null;
   cancelAnimationFrame(animRaf);base.width=600;base.height=780;bctx.fillStyle='#0d0c09';bctx.fillRect(0,0,600,780);cv.width=600;cv.height=780;
   noteText='';update();go(0);
 }
@@ -870,7 +1305,7 @@ function loadFile(f){
       var sc=Math.min(1,1000/Math.max(im.naturalWidth,im.naturalHeight));
       var W=Math.max(1,Math.round(im.naturalWidth*sc)),H=Math.max(1,Math.round(im.naturalHeight*sc));
       base.width=W;base.height=H;bctx.drawImage(im,0,0,W,H);
-      cv.width=W;cv.height=H;pts=[];cur=0;aim=null;meshAll=null;meshLayer=null;verdict=null;resultsOk=false;curR=null;meshToken++;meshStale=true;anim=false;cancelAnimationFrame(animRaf);
+      cv.width=W;cv.height=H;pts=[];cur=0;aim=null;meshAll=null;meshLayer=null;verdict=null;resultsOk=false;curR=null;meshToken++;meshStale=true;photoId++;lastStab=null;lastFlip=null;lumaCache=null;qaKey='';curQA=null;curUQ=null;lastAI=null;anim=false;cancelAnimationFrame(animRaf);
       cv.classList.remove('flash');void cv.offsetWidth;cv.classList.add('flash');mode='place';
       update();go(1);
       setTimeout(function(){runMesh();},500);
@@ -1045,7 +1480,7 @@ function esc(s){return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;
 function cls(s){return s>=85?'good':(s>=60?'warn':'bad');}
 function mCard(i,sw){
   var c=cls(i.score),word=i.dir==='ok'?'в норме':(i.dir==='low'?(i.spec.low||'ниже нормы'):(i.spec.high||'выше нормы'));
-  return '<div class="m"><div class="mh"><span class="nm">'+i.spec.name+'</span><span class="val '+c+'">'+i.d+'</span></div><p>'+((PLAIN[i.spec.id]&&PLAIN[i.spec.id][i.dir])||i.spec.note)+'</p><div class="bar"><i class="fill-'+c+'" style="--w:'+(Math.max(.02,i.score/100)).toFixed(3)+'"></i></div><div class="mf"><span>норма '+i.spec.idealText+' · вес '+Math.round(100*i.spec.w/sw)+'%</span><span class="'+c+'">'+word+' · '+s10(i.score)+'/10</span></div></div>';
+  return '<div class="m"><div class="mh"><span class="nm">'+i.spec.name+'</span><span class="val '+c+'">'+i.d+pmHtml(i)+'</span></div><p>'+((PLAIN[i.spec.id]&&PLAIN[i.spec.id][i.dir])||i.spec.note)+'</p><div class="bar"><i class="fill-'+c+'" style="--w:'+(Math.max(.02,i.score/100)).toFixed(3)+'"></i></div><div class="mf"><span>норма '+i.spec.idealText+' · вес '+Math.round(100*i.spec.w/sw)+'%</span><span class="'+c+'">'+word+' · '+s10(i.score)+'/10'+relHtml(i)+'</span></div></div>';
 }
 function renderResults(){
   var P=currentPoints();
@@ -1054,7 +1489,7 @@ function renderResults(){
   if(R.error){for(var k2=2;k2<PAGES;k2++)$('p'+k2).innerHTML='';curR=null;resultsOk=false;renderLive();return;}
   resultsOk=true;
   var score=Math.round(R.overall),total10=(R.overall/10).toFixed(1);
-  var QI=qualityIssues();
+  var QI=qualityIssues();var QA=curQA,UQ=curUQ;window.__fmQA=QA;
   var sw=0;R.items.forEach(function(i){sw+=i.spec.w;});
   var loss=R.items.map(function(i){return {i:i,lost:i.gain,share:100*i.spec.w/sw};}).sort(function(a,b){return b.lost-a.lost;});
   var totalLost=100-R.overall;
@@ -1068,12 +1503,13 @@ function renderResults(){
    +'<div class="ring" style="--p:'+score+'"><span>'+total10+'</span><small>из 10</small></div>'
    +'<div class="tier"><b>'+(QI.length?'—':R.tier)+'</b><span>'+(QI.length?'фото не подходит для оценки':'≈ PSL '+R.psl.toFixed(1)+' · '+R.overall.toFixed(1)+' из 100 · перевод приблизительный')+'</span></div>'
    +'<div class="meter"><i style="left:'+Math.max(2,Math.min(98,R.overall))+'%"></i></div><div class="legend">'+legend+'</div>';
-  if(QI.length)h+='<div class="qbox"><b class="err">Проблемы со снимком</b><ul>'+QI.map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul><p class="hint" style="margin-top:6px">Тир не показываю: числа при таком фото недостоверны. Переснимите.</p></div>';
+  h+=qaBoxHtml(QA)+confHtml(R,QA,UQ);
   h+='</div>';
   $('p2').innerHTML=h;
 
   /* 4. ИИ */
-  $('p3').innerHTML='<div class="stg"><div class="eyebrow">Второе мнение</div><h2>ИИ-оценщик</h2><p class="lead">Второй ИИ смотрит только на числа замеров и сам решает, какой это тир. Фото никуда не уходит.</p><div id="vslot"></div></div>';
+  $('p3').innerHTML='<div class="stg"><div class="eyebrow">Второе мнение</div><h2>ИИ-оценщик</h2><p class="lead" id="aiLead">'+esc(aiLead())+'</p><div id="aiopt"></div><div id="vslot"></div></div>';
+  paintAiOpt();
   curR=R;curQI=QI;paintVerdict();
 
   /* 5. Расчёт */
@@ -1086,7 +1522,7 @@ function renderResults(){
     else why+='<p>Это высший диапазон шкалы.</p>';
     if(ti<TIERS.length-1)why+='</p>';
   }
-  why+='</div><h3>Кто забрал больше всего баллов</h3><div class="cards">';
+  why+=uqNote(UQ,QA);why+='</div><h3>Кто забрал больше всего баллов</h3><div class="cards">';
   var top=loss.filter(function(x){return x.lost>0.05;}).slice(0,6),mx=top.length?top[0].lost:1;
   if(top.length)why+=top.map(function(x){return '<div class="m"><div class="mh"><span class="nm">'+x.i.spec.name+'</span><span class="val bad">−'+x.lost.toFixed(1)+'</span></div><div class="bar"><i class="fill-warn" style="--w:'+Math.max(.04,x.lost/mx).toFixed(3)+'"></i></div><div class="mf"><span>вес '+Math.round(x.share)+'%</span><span>оценка '+s10(x.i.score)+'/10</span></div></div>';}).join('');
   else why+='<div class="m"><p>Потерь нет: все замеры в норме.</p></div>';
@@ -1127,6 +1563,7 @@ $('track').addEventListener('click',function(e){
   if(a==='dl')downloadPng();
   else if(a==='again')resetAll();
   else if(a==='vbtn'){if(curR)runVerdict(curR);}
+  else if(a==='aiphoto'){try{localStorage.setItem(aiKey(),aiPhotoOn()?'0':'1');}catch(_){}verdict=null;paintAiOpt();paintVerdict();}
   else if(a==='copy'){
     var ok=function(){b.textContent='Скопировано';setTimeout(function(){b.textContent='Скопировать результат';},1500);};
     try{navigator.clipboard.writeText(lastText).then(ok,function(){selectFallback(b);});}catch(_){selectFallback(b);}
@@ -1144,32 +1581,45 @@ function canVerdict(){return !!(sample||tgData());}
 async function runVerdict(R){
   if(!canVerdict()||verdictBusy)return;
   verdictBusy=true;paintVerdict();
+  var rec={t:Date.now(),path:sample?'claude':'worker'};lastAI=rec;
   try{
-    var ms=meshSymmetry(),raw={};
-    R.items.forEach(function(i){raw[i.spec.id]=i.v;});
     if(sample){
-      var lines=R.items.map(function(i){return i.spec.name+': '+i.d+' (норма '+i.spec.idealText+'), оценка сетки '+s10(i.score)+'/10';}).join('\n');
-      var pr='Ты независимый эксперт по оценке пропорций лица по шкале looksmax-форумов (не научной). Другая программа поставила сетку из 468 точек и посчитала замеры. Ты видишь только числа.\n'+lines+(ms?'\nСимметрия по сетке: '+ms.score.toFixed(1)+'%':'')+'\nПравила-сетка дали '+R.overall.toFixed(1)+' из 100, тир '+R.tier+'.\nТиры от низшего: '+TIERS.map(function(t){return t[1];}).join(', ')+'.\nОцени сам, какому тиру соответствует это сочетание замеров, учитывая важность и сочетание замеров. Не подгоняй под тир сетки. Дай 3-4 коротких конкретных совета именно для этих замеров: уход, сон, питание в общих чертах, стрижка или борода, как переснять фото. Без экстремальных диет, калорий и цифр веса, без операций, лекарств и «костной ломки», без оскорблений; если нужна медицина, пиши «к врачу». Верни только JSON: {"tier":"один из списка","why":"3-5 предложений по-русски","advice":["совет","совет"]}.';
+      var UQ=curUQ;
+      var lines=R.items.map(function(i){var u=UQ&&UQ.m[i.spec.id];return i.spec.name+': '+i.d+(u?' (погрешность '+fmtSd(i.spec.id,u.sd)+(u.rel==='low'?', ненадёжно':'')+')':'')+' (норма '+i.spec.idealText+')';}).join('\n');
+      var pr='Ты независимый эксперт по оценке пропорций лица по шкале looksmax-форумов (шкала условная, не научная). Программа измерила лицо по точкам FaceMesh. Фото тебе НЕ передано: ты видишь только числа и не должен описывать внешность, кожу, волосы или то, что «видно на фото».\n'+lines+'\nЗамеры с пометкой «ненадёжно» не используй как основание для выводов.\nТиры от низшего: '+TIERS.map(function(t){return t[1];}).join(', ')+'.\nОцени сам, какому тиру соответствует это сочетание замеров, не опираясь на готовый расчёт. Дай 3-4 коротких конкретных совета именно для этих замеров: уход, сон, питание в общих чертах, стрижка или борода, как переснять фото. Без экстремальных диет, калорий и цифр веса, без операций, лекарств и «костной ломки», без оскорблений; если нужна медицина, пиши «к врачу». Верни только JSON: {"tier":"один из списка","confidence":"low|medium|high","why":"3-5 предложений по-русски про замеры, без описания фото","concerns":["что в замерах вызывает сомнение"],"advice":["совет","совет"]}.';
+      rec.prompt=pr;
       var r=await askJson(pr,{modelTier:'default',cache:false});
-      if(r&&r.tier&&r.why)verdict={tier:String(r.tier),why:String(r.why),advice:Array.isArray(r.advice)?r.advice.slice(0,4).map(String):[]};
+      rec.resp=r;
+      if(r&&r.tier&&r.why)verdict={tier:String(r.tier),why:String(r.why),advice:Array.isArray(r.advice)?r.advice.slice(0,4).map(String):[],confidence:String(r.confidence||''),concerns:Array.isArray(r.concerns)?r.concerns.slice(0,3).map(String):[],basis:'numbers',claimsPhoto:false};
       else msg('ИИ ответил в неожиданном формате. Нажмите ещё раз.');
     }else{
-      var resp=await fetch(EVAL_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({initData:tgData(),raw:raw,meshSym:ms?ms.score:null,gridOverall:R.overall,gridTier:R.tier})});
+      var payload=buildPayload(R,aiPhotoOn());
+      rec.payload=JSON.parse(JSON.stringify(payload,function(k,v){return k==='initData'?(v?'<скрыто>':''):(k==='image'?'<jpeg base64, '+v.length+' симв.>':v);}));
+      var resp=await fetch(EVAL_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
       var d=await resp.json().catch(function(){return {};});
-      if(resp.ok&&d.tier&&d.why)verdict={tier:d.tier,why:d.why,advice:Array.isArray(d.advice)?d.advice.slice(0,4):[]};
+      rec.status=resp.status;rec.resp=d;
+      if(resp.ok&&d.tier&&d.why)verdict={tier:d.tier,why:d.why,advice:Array.isArray(d.advice)?d.advice.slice(0,4):[],confidence:d.confidence||'',concerns:Array.isArray(d.concerns)?d.concerns.slice(0,3):[],basis:d.basis||'numbers',claimsPhoto:!!d.claimsPhoto};
       else{
-        var E={no_key:'Оценщик ИИ ещё не подключён: в Cloudflare не добавлен ключ ANTHROPIC_API_KEY.',rate_limited:'Слишком много оценок за час, попробуйте позже.',unauthorized:'Не удалось подтвердить Telegram. Закройте и откройте Фейсметр заново.'};
+        var E={no_key:'Оценщик ИИ ещё не подключён: в Cloudflare не добавлен ключ GEMINI_API_KEY.',rate_limited:'Слишком много оценок за час, попробуйте позже.',unauthorized:'Не удалось подтвердить Telegram. Закройте и откройте Фейсметр заново.',photo_unsuitable:'Сервер счёл снимок непригодным для оценки. Переснимите фото.',outdated:'Версия приложения устарела. Закройте и откройте Фейсметр заново.',bad_data:'Сервер отклонил замеры как некорректные'+(d.field?' ('+d.field+')':'')+'. Проверьте точки.'};
         msg(E[d.error]||('ИИ-оценщик не ответил'+(d.error?' ('+d.error+')':'')+'. Нажмите ещё раз.'));
       }
     }
-  }catch(e){msg('ИИ-оценщик недоступен: '+((e&&(e.message||e.code))||e));}
+  }catch(e){rec.err=String((e&&(e.message||e.code))||e);msg('ИИ-оценщик недоступен: '+rec.err);}
   finally{verdictBusy=false;if(verdict)hap('ok');paintVerdict();}
 }
 function verdictHtml(R,QI){
   var out='';
   if(QI.length)return '<div class="card"><p class="err">Фото не подходит, ИИ-оценка недоступна. Переснимите.</p></div>';
   if(verdict){
-    out+='<div class="cards"><div class="card pop"><div class="eyebrow">Тир по мнению ИИ</div><div class="fin g" style="font-size:44px">'+esc(verdict.tier)+'</div><p>Сетка дала <b>'+R.tier+'</b>'+(verdict.tier===R.tier?' · мнения совпали':'')+'</p><p class="hint">'+esc(verdict.why)+'</p></div>';
+    var gi=-1,ai=-1;TIERS.forEach(function(t,i){if(t[1]===R.tier)gi=i;if(t[1]===verdict.tier)ai=i;});
+    var gap=(gi>=0&&ai>=0)?ai-gi:0,ag=Math.abs(gap);
+    out+='<div class="cards"><div class="card pop"><div class="eyebrow">Тир по мнению ИИ</div><div class="fin g" style="font-size:44px">'+esc(verdict.tier)+'</div><p>Расчёт по замерам дал <b>'+R.tier+'</b>'+(gap===0?' · мнения совпали':'')+'</p>';
+    if(ag>1)out+='<p class="err">ИИ и расчёт расходятся на '+ag+(ag<5?' тира':' тиров')+'. Ответ ИИ не подгонялся под расчёт: это сигнал, что замеры или точки могут быть неточны.</p>';
+    out+='<p class="hint">'+esc(verdict.why)+'</p>';
+    out+='<p class="hint2">'+(verdict.basis==='photo+numbers'?'ИИ видел сжатое фото и числа замеров.':'ИИ видел только числа замеров. Фото не передавалось, поэтому точки он проверить не мог.')+(verdict.confidence?' Уверенность ИИ: '+esc({low:'низкая',medium:'средняя',high:'высокая'}[verdict.confidence]||verdict.confidence)+'.':'')+'</p>';
+    if(verdict.claimsPhoto)out+='<p class="hint2 err">В ответе есть описание «по фото», хотя фото не передавалось: эту часть не учитывайте.</p>';
+    if(verdict.concerns&&verdict.concerns.length)out+='<p class="hint2">Сомнения ИИ: '+verdict.concerns.map(esc).join('; ')+'.</p>';
+    out+='</div>';
     if(verdict.advice&&verdict.advice.length)out+='<h3>Советы ИИ по твоим замерам</h3>'+verdict.advice.map(function(t){return '<div class="tip"><span class="tag">ИИ</span><p>'+esc(t)+'</p></div>';}).join('');
     out+='</div>';
   }
@@ -1228,6 +1678,7 @@ function syncAi(){
   $('aiBtn').hidden=!(sample&&mode!=='demo');
   $('aiBtn').disabled=aiBusy||meshBusy;
   $('meshBtn').hidden=mode==='demo';
+  $('dgBtn').hidden=!(window.__fmDiagOn&&window.__fmDiagOn()&&mode==='adjust');
   $('meshBtn').disabled=aiBusy||meshBusy;
   $('meshBtn').textContent=meshBusy?'Face Mesh работает…':'Авто-точки';
   $('mtog').hidden=!(meshAll&&mode==='adjust');
@@ -1270,9 +1721,9 @@ function getMesh(fresh){
   fm.onResults(function(r){if(pendingRes){var f=pendingRes;pendingRes=null;f(r);}});
   return fm;
 }
-function sendMesh(f,img){
+function sendMesh(f,img,tmo){
   return new Promise(function(resolve,reject){
-    var t=setTimeout(function(){pendingRes=null;reject({code:'timeout',message:'модель не ответила за 90 секунд'});},90000);
+    var t=setTimeout(function(){pendingRes=null;reject({code:'timeout',message:'модель не ответила за 90 секунд'});},tmo||90000);
     pendingRes=function(r){clearTimeout(t);resolve(r);};
     f.send({image:img}).catch(function(e){clearTimeout(t);pendingRes=null;reject(e);});
   });
@@ -1297,21 +1748,24 @@ async function runMesh(){
     }
     if(!L){msg('Лицо не найдено. Нужен один человек анфас, лицо целиком в кадре, без сильного поворота. Можно расставить точки вручную.');aiNote('');return;}
     var W=base.width,H=base.height;
-    var M=L.map(function(l){return {x:l.x*W,y:l.y*H};});
-    var mid=function(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};};
-    var iris=M.length>=478;
-    var map={hair:M[10],glab:M[9],sub:M[2],men:M[152],
-      pupL:iris?M[468]:mid(M[33],M[133]),pupR:iris?M[473]:mid(M[263],M[362]),
-      medL:M[133],latL:M[33],medR:M[362],latR:M[263],
-      zygL:M[234],zygR:M[454],goL:M[172],goR:M[397],alL:M[129],alR:M[358],
-      mouL:M[61],mouR:M[291],ls:M[0],sto:mid(M[13],M[14]),li:M[17]};
-    [['pupL','pupR'],['medL','medR'],['latL','latR'],['zygL','zygR'],['goL','goR'],['alL','alR'],['mouL','mouR']].forEach(function(p){
-      if(map[p[0]].x>map[p[1]].x){var t=map[p[0]];map[p[0]]=map[p[1]];map[p[1]]=t;}
-    });
-    var P=PTS.map(function(p){return {x:map[p.id].x,y:map[p.id].y};});
-    verdict=null;meshAll=M;meshDirty=true;pts=P;cur=N;mode='adjust';aim=null;animNext=true;hap('ok');startReveal();update();
+    var M=L.map(function(l){return {x:l.x*W,y:l.y*H,z:l.z*W};});
+    var kp=meshKeyPoints(M),P=kp.P;
+    var stabNote='';
+    lastStab=null;lastFlip=null;
+    try{
+      aiNote('Проверяю детекцию на зеркальной копии снимка.');
+      var fl=await flipPass(M,P,W,H,tok);
+      if(tok!==meshToken)return;
+      if(fl&&fl.st){
+        lastStab=fl.st;lastFlip=fl;
+        if(fl.st.rms<=.08&&fl.averaged>0)P=fl.P;
+        stabNote=' Проверка на зеркальной копии: среднее расхождение точек '+(fl.st.rms*100).toFixed(1)+'% межзрачкового расстояния'+(fl.st.rms<=.08?', положение точек усреднено по двум проходам.':'.');
+      }else if(fl&&fl.failed)stabNote=' На зеркальной копии лицо найти не удалось: стабильность не проверена.';
+    }catch(eF){if(tok!==meshToken)return;stabNote=' Проверка на зеркальной копии не выполнена.';}
+    lumaCache=null;qaKey='';
+        verdict=null;meshAll=M;meshDirty=true;pts=P;cur=N;mode='adjust';aim=null;animNext=true;hap('ok');startReveal();update();
     setTimeout(function(){if(tok!==meshToken||pts.length<N)return;var Rr=analyze(pts);if(!Rr.error&&!qualityIssues().length)runVerdict(Rr);},50);
-    aiNote('Готово: поставлено '+M.length+' точек сетки, 21 из них идёт в замеры. Линию роста волос проверь лупой, она берётся по верху сетки.');
+    aiNote('Готово: поставлено '+M.length+' точек сетки, 21 из них идёт в замеры. Линию роста волос проверь лупой, она берётся по верху сетки.'+stabNote);
   }catch(e){
     aiNote('');msg('Face Mesh не отработал: '+((e&&e.message)||(e&&e.code)||e)+'. Нажмите «Авто-точки» ещё раз или расставьте точки вручную.');
   }finally{meshBusy=false;syncAi();if(meshQueued){meshQueued=false;setTimeout(runMesh,30);}}
@@ -1435,6 +1889,7 @@ $('aiStop').addEventListener('click',function(){if(aiCtl)aiCtl.abort();});
 $('ovStop').addEventListener('click',function(){if(aiCtl)aiCtl.abort();});
 $('mtog').addEventListener('click',function(){meshOn=!meshOn;render();syncAi();});
 
+$('dgBtn').addEventListener('click',function(){if(window.__fmOpenDiag)window.__fmOpenDiag();});
 ['file','cam'].forEach(function(id){
   $(id).addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];loadFile(f);e.target.value='';});
 });
@@ -1456,6 +1911,14 @@ $('reset').addEventListener('click',function(){pts=[];cur=0;mode='place';aim=nul
 
 try{var tw=window.Telegram&&Telegram.WebApp;if(tw){tw.ready();tw.expand();try{tw.setHeaderColor('#000000');tw.setBackgroundColor('#000000');}catch(_){}try{if(tw.disableVerticalSwipes)tw.disableVerticalSwipes();}catch(_){}}}catch(_){}
 document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{if(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.openLink){e.preventDefault();Telegram.WebApp.openLink(a.href);}}catch(_){}});
+window.__fmSync=function(){syncAi();};
+window.__fmState=function(){
+  var ids=PTS.map(function(p){return p.id;}),names={};PTS.forEach(function(p){names[p.id]=p.name;});
+  return {mode:mode,W:base.width,H:base.height,base:base,pts:pts,ids:ids,names:names,mesh:meshAll,R:curR,QA:curQA,UQ:curUQ,stab:lastStab,ai:lastAI,symp:SYMP,
+    meas:MEAS,MEAS:MEAS,TIERS:TIERS,noise:NOISE,src:MESHSRC,
+    sens:function(){return pts.length>=N?sensitivity(pts,lastStab?lastStab.per:null):null;},
+    payload:function(){return curR?buildPayload(curR,false):null;}};
+};
 aiProbe();
 update();go(0,true);
 })();
@@ -1487,7 +1950,7 @@ function sp(){sv('pf',PF)}
 window.__fmNew=function(){sid=Date.now()};
 window.__fmR=function(R,QI){if(QI.length||R.error)return;clearTimeout(tm);tm=setTimeout(function(){
  var m={},r={};R.items.forEach(function(i){m[i.spec.id]=Math.round(i.score/10);r[i.spec.id]=+(+i.v).toFixed(3)});
- var e={id:sid,t:Date.now(),o:+R.overall.toFixed(1),tier:R.tier,m:m,r:r,cv:CAL.v},l=H[H.length-1];
+ var e={id:sid,t:Date.now(),o:+R.overall.toFixed(1),tier:R.tier,m:m,r:r,cv:CAL.v,cf:(window.__fmQA&&window.__fmQA.conf)||''},l=H[H.length-1];
  if(l&&l.id===sid)H[H.length-1]=e;else{H.push(e);addEv('analysis',R.tier+' · '+(R.overall/10).toFixed(1)+'/10')}
  sv('hist',H);R6();R7();R8();R9()},2500)};
 function last(){return H[H.length-1]}
@@ -1615,7 +2078,7 @@ function toast(x){var e=d.createElement('div');e.className='fmt';e.textContent=x
 /* рейтинг через воркер (нужен KV LB) */
 var EP='https://facemeter.scallymonlight.workers.dev/lb';
 function lbc(a,x){var i=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData;if(!i)return Promise.reject();return fetch(EP,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(Object.assign({action:a,initData:i},x||{}))}).then(function(r){return r.json()})}
-function lbLoad(s){var box=$('lbl');if(!box)return;var l=s.H[s.H.length-1],best=s.H.length?Math.max.apply(0,s.H.map(function(e){return e.o})):0,p=ld(J+'lb',false)&&l?lbc('submit',{score:best,tier:l.tier,v:CAL.v}).then(function(){return lbc('top')}):lbc('top');
+function lbLoad(s){var box=$('lbl');if(!box)return;var okH=s.H.filter(function(e){return e.cf!=='low'}),bE=okH.reduce(function(a,e){return !a||e.o>a.o?e:a},null),p=ld(J+'lb',false)&&bE?lbc('submit',{score:bE.o,tier:bE.tier,v:CAL.v}).then(function(){return lbc('top')}):lbc('top');
  p.then(function(r){if(r.error){box.textContent=r.error==='no_kv'?tr('Рейтинг не подключён на сервере'):r.error;return}box.innerHTML=r.top.length?r.top.map(function(x,i){return'<div class="tg"><span>'+(i+1)+'. '+esc(x.n)+'</span><span>'+(x.s/10).toFixed(1)+' · '+esc(x.t)+'</span></div>'}).join(''):tr('Пока никого')}).catch(function(){box.textContent=tr('Рейтинг доступен только в Telegram')})}
 /* карточки */
 var CT=ld(J+'ct','dark');
@@ -1845,6 +2308,202 @@ function curI(){for(var i=0;i<tabs.length;i++)if(tabs[i].classList.contains('on'
 var top=d.querySelector('.top');
 function bindScroll(el){el.addEventListener('scroll',function(){top.classList.toggle('scrolled',el.scrollTop>6)},{passive:true})}
 [].forEach.call(d.querySelectorAll('.page,.tabv'),bindScroll);
+})();
+</script>
+<script>
+(function(){
+var d=document,$=function(i){return d.getElementById(i);};
+var S=function(){try{return window.__fmState?window.__fmState():null;}catch(e){return null;}};
+var dk=function(){return 'fm2:'+(window.FMU||'')+'diag';};
+var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+var f1=function(x,n){return (typeof x==='number'&&isFinite(x))?x.toFixed(n==null?1:n):'—';};
+window.__fmDiagOn=function(){try{if(/(^|[#?&])diag(=1)?($|&)/.test(location.hash.slice(1)+'&'+location.search.slice(1)))return true;return localStorage.getItem(dk())==='1';}catch(e){return false;}};
+function note(t){var m=$('msg');if(!m)return;m.textContent=t;m.hidden=false;clearTimeout(note.t);note.t=setTimeout(function(){m.hidden=true;},2200);}
+/* 5 касаний по логотипу включают/выключают диагностику */
+var taps=0,tt=0,br=d.querySelector('.brand');
+if(br)br.addEventListener('click',function(){
+  taps++;clearTimeout(tt);tt=setTimeout(function(){taps=0;},3000);
+  if(taps>=5){taps=0;var on=!window.__fmDiagOn();try{localStorage.setItem(dk(),on?'1':'0');}catch(e){}
+    note(on?'Диагностика включена: кнопка появится после расстановки точек':'Диагностика выключена');if(window.__fmSync)window.__fmSync();}
+});
+var v={tab:'photo',scale:1,ox:0,oy:0,all:true,nums:false,key:true,pairs:false,meas:null,sel:null,selKey:null};
+var cvd=null,g=null,dpr=1,ptr={},pinch=0,downT=0,moved=0;
+var ov=$('dgov'),body=$('dgbody');
+function open(){if(!S()||S().mode!=='adjust'){note('Сначала поставьте точки на фото');return;}ov.hidden=false;render();}
+window.__fmOpenDiag=open;
+$('dgclose').addEventListener('click',function(){ov.hidden=true;});
+$('dgtabs').addEventListener('click',function(e){var b=e.target.closest('button[data-t]');if(!b)return;v.tab=b.getAttribute('data-t');render();});
+function tabs(){[].forEach.call($('dgtabs').children,function(b){b.classList.toggle('on',b.getAttribute('data-t')===v.tab);});}
+function render(){
+  var st=S();if(!st)return;tabs();
+  if(v.tab==='photo')return renderPhoto(st);
+  cvd=null;
+  body.innerHTML={pts:tPoints,meas:tMeas,qa:tQa,data:tData}[v.tab](st);
+}
+/* ---------- Фото: 468 точек, номера, координаты, масштаб ---------- */
+function renderPhoto(st){
+  body.innerHTML='<div class="dgctl"><label><input type="checkbox" data-l="all"'+(v.all?' checked':'')+'> 468 точек</label><label><input type="checkbox" data-l="nums"'+(v.nums?' checked':'')+'> номера</label><label><input type="checkbox" data-l="key"'+(v.key?' checked':'')+'> ключевые 21</label><label><input type="checkbox" data-l="pairs"'+(v.pairs?' checked':'')+'> пары симметрии</label></div>'
+   +'<div class="dgctl"><button class="btn sm" data-z="-1" type="button">−</button><button class="btn sm" data-z="1" type="button">+</button><button class="btn sm" data-z="0" type="button">Сброс</button><input id="dgidx" type="number" min="0" max="477" placeholder="№ точки" inputmode="numeric"><button class="btn sm" id="dggo" type="button">Найти</button>'+(v.meas?'<button class="btn sm" data-z="m" type="button">Снять «'+esc(v.meas)+'»</button>':'')+'</div>'
+   +'<canvas id="dgcv" class="dgcv"></canvas><div class="dginfo" id="dginfo"></div><p class="hint2">Касание выбирает ближайшую точку. Перетаскивание двигает, два пальца масштабируют. Номера всех точек появляются при увеличении от 4×.</p>';
+  cvd=$('dgcv');g=cvd.getContext('2d');dpr=Math.min(2,window.devicePixelRatio||1);
+  var cw=Math.min(window.innerWidth-24,620),ch=Math.round(cw*st.H/st.W);
+  cvd.style.width=cw+'px';cvd.style.height=ch+'px';cvd.width=Math.round(cw*dpr);cvd.height=Math.round(ch*dpr);
+  draw();info();
+}
+function k(st){return cvd.width/st.W*v.scale;}
+function clampPan(st){
+  if(v.scale<=1.001){v.scale=1;v.ox=0;v.oy=0;return;}
+  var kk=k(st),mw=st.W*kk,mh=st.H*kk;
+  v.ox=Math.min(0,Math.max(cvd.width-mw,v.ox));v.oy=Math.min(0,Math.max(cvd.height-mh,v.oy));
+}
+function zoomAt(st,f,cx,cy){
+  var ns=Math.max(1,Math.min(12,v.scale*f));f=ns/v.scale;
+  v.ox=cx-(cx-v.ox)*f;v.oy=cy-(cy-v.oy)*f;v.scale=ns;clampPan(st);
+}
+function draw(){
+  var st=S();if(!st||!cvd)return;
+  var W=st.W,kk=k(st),M=st.mesh,P=st.pts,ids=st.ids;
+  g.setTransform(1,0,0,1,0,0);g.fillStyle='#000';g.fillRect(0,0,cvd.width,cvd.height);
+  g.setTransform(kk,0,0,kk,v.ox,v.oy);g.drawImage(st.base,0,0);g.setTransform(1,0,0,1,0,0);
+  var X=function(p){return p.x*kk+v.ox;},Y=function(p){return p.y*kk+v.oy;};
+  var inb=function(x,y){return x>-20&&y>-20&&x<cvd.width+20&&y<cvd.height+20;};
+  var fs=Math.round(9*dpr);g.font='600 '+fs+'px "IBM Plex Mono",monospace';g.textBaseline='middle';
+  var showNums=v.nums||v.scale>=4;
+  if(M&&v.all){
+    g.fillStyle='rgba(255,255,255,.75)';g.beginPath();
+    for(var i=0;i<M.length;i++){var x=X(M[i]),y=Y(M[i]);if(inb(x,y)){g.moveTo(x+1.3*dpr,y);g.arc(x,y,1.3*dpr,0,6.2832);}}
+    g.fill();
+    if(showNums){g.fillStyle='rgba(255,255,255,.95)';g.strokeStyle='#000';g.lineWidth=2.5*dpr;
+      for(i=0;i<M.length;i++){x=X(M[i]);y=Y(M[i]);if(inb(x,y)&&(v.scale>=4||i%1===0)){g.strokeText(i,x+3*dpr,y-3*dpr);g.fillText(i,x+3*dpr,y-3*dpr);}}}
+  }
+  if(M&&v.pairs&&st.symp){g.strokeStyle='rgba(255,107,129,.85)';g.lineWidth=1*dpr;g.beginPath();st.symp.forEach(function(p){if(M[p[0]]&&M[p[1]]){g.moveTo(X(M[p[0]]),Y(M[p[0]]));g.lineTo(X(M[p[1]]),Y(M[p[1]]));}});g.stroke();}
+  var ms=v.meas?st.meas[v.meas]:null;
+  if(ms){g.strokeStyle='#FFFFFF';g.lineWidth=2.2*dpr;g.beginPath();ms.segs.forEach(function(s){var a=P[ids.indexOf(s[0])],b=P[ids.indexOf(s[1])];if(a&&b){g.moveTo(X(a),Y(a));g.lineTo(X(b),Y(b));}});g.stroke();}
+  if(v.key||ms){
+    P.forEach(function(p,i){
+      var on=!ms||ms.pts.indexOf(ids[i])>=0;if(!v.key&&!on)return;
+      var x=X(p),y=Y(p);g.beginPath();g.arc(x,y,(on?4.5:3)*dpr,0,6.2832);g.fillStyle=on?'#FFFFFF':'rgba(255,255,255,.35)';g.fill();g.lineWidth=1.5*dpr;g.strokeStyle='#000';g.stroke();
+      if(on){g.fillStyle='#FFE14D';g.strokeStyle='#000';g.lineWidth=3*dpr;g.strokeText(ids[i],x+7*dpr,y+8*dpr);g.fillText(ids[i],x+7*dpr,y+8*dpr);}
+    });
+  }
+  if(v.sel!=null&&M&&M[v.sel]){var sx=X(M[v.sel]),sy=Y(M[v.sel]);g.strokeStyle='#FF7A59';g.lineWidth=2*dpr;g.beginPath();g.arc(sx,sy,9*dpr,0,6.2832);g.moveTo(sx-14*dpr,sy);g.lineTo(sx+14*dpr,sy);g.moveTo(sx,sy-14*dpr);g.lineTo(sx,sy+14*dpr);g.stroke();}
+  if(v.selKey!=null&&P[v.selKey]){sx=X(P[v.selKey]);sy=Y(P[v.selKey]);g.strokeStyle='#FF7A59';g.lineWidth=2*dpr;g.beginPath();g.arc(sx,sy,10*dpr,0,6.2832);g.stroke();}
+}
+function info(){
+  var st=S(),el=$('dginfo');if(!st||!el)return;
+  var h='';
+  if(v.sel!=null&&st.mesh&&st.mesh[v.sel]){
+    var p=st.mesh[v.sel],used=Object.keys(st.src).filter(function(id){return new RegExp('(^|[^0-9])'+v.sel+'([^0-9]|$)').test(st.src[id]);});
+    h+='<b>Точка сетки №'+v.sel+'</b> x='+f1(p.x,2)+' y='+f1(p.y,2)+' z='+f1(p.z,2)+' px · норм. x='+f1(p.x/st.W,4)+' y='+f1(p.y/st.H,4)+(used.length?'<br>Входит в замеры как: '+used.map(function(id){return '<b>'+id+'</b>';}).join(', '):'<br>В замерах не используется');
+  }
+  if(v.selKey!=null){var q=st.pts[v.selKey],id=st.ids[v.selKey];h+=(h?'<br>':'')+'<b>Ключевая «'+id+'»</b> ('+esc(st.names[id])+') x='+f1(q.x,2)+' y='+f1(q.y,2)+' · источник: '+esc(st.src[id]);}
+  el.innerHTML=h||'Точка не выбрана';
+}
+function pick(st,sx,sy){
+  var kk=k(st),best=-1,bd=1e9,bk=-1,bkd=1e9,M=st.mesh,P=st.pts,lim=22*dpr;
+  P.forEach(function(p,i){var dd=Math.hypot(p.x*kk+v.ox-sx,p.y*kk+v.oy-sy);if(dd<bkd){bkd=dd;bk=i;}});
+  if(M&&v.all)for(var i=0;i<M.length;i++){var dd2=Math.hypot(M[i].x*kk+v.ox-sx,M[i].y*kk+v.oy-sy);if(dd2<bd){bd=dd2;best=i;}}
+  v.sel=bd<=lim?best:null;v.selKey=bkd<=lim?bk:null;
+}
+body.addEventListener('pointerdown',function(e){
+  if(!cvd||e.target!==cvd)return;
+  cvd.setPointerCapture&&cvd.setPointerCapture(e.pointerId);
+  ptr[e.pointerId]={x:e.clientX,y:e.clientY};moved=0;downT=Date.now();pinch=0;
+});
+body.addEventListener('pointermove',function(e){
+  if(!cvd||!ptr[e.pointerId])return;
+  var st=S();if(!st)return;var ids=Object.keys(ptr),old=ptr[e.pointerId],r=cvd.getBoundingClientRect(),m=cvd.width/r.width;
+  if(ids.length>=2){
+    ptr[e.pointerId]={x:e.clientX,y:e.clientY};
+    var a=ptr[ids[0]],b=ptr[ids[1]],dist=Math.hypot(a.x-b.x,a.y-b.y);
+    if(pinch)zoomAt(st,dist/pinch,((a.x+b.x)/2-r.left)*m,((a.y+b.y)/2-r.top)*m);
+    pinch=dist;moved=99;draw();return;
+  }
+  var dx=e.clientX-old.x,dy=e.clientY-old.y;moved+=Math.abs(dx)+Math.abs(dy);
+  if(v.scale>1){v.ox+=dx*m;v.oy+=dy*m;clampPan(st);draw();}
+  ptr[e.pointerId]={x:e.clientX,y:e.clientY};
+});
+function up(e){
+  if(!cvd||!ptr[e.pointerId])return;
+  var wasTap=moved<8&&Date.now()-downT<400&&Object.keys(ptr).length===1;delete ptr[e.pointerId];pinch=0;
+  if(wasTap){var st=S(),r=cvd.getBoundingClientRect(),m=cvd.width/r.width;if(st){pick(st,(e.clientX-r.left)*m,(e.clientY-r.top)*m);draw();info();}}
+}
+body.addEventListener('pointerup',up);body.addEventListener('pointercancel',function(e){delete ptr[e.pointerId];pinch=0;});
+body.addEventListener('wheel',function(e){if(!cvd||e.target!==cvd)return;e.preventDefault();var st=S(),r=cvd.getBoundingClientRect(),m=cvd.width/r.width;if(st){zoomAt(st,e.deltaY<0?1.25:.8,(e.clientX-r.left)*m,(e.clientY-r.top)*m);draw();}},{passive:false});
+body.addEventListener('change',function(e){var l=e.target.getAttribute&&e.target.getAttribute('data-l');if(l){v[l]=e.target.checked;draw();}});
+body.addEventListener('click',function(e){
+  var st=S(),b=e.target.closest('button');if(!b||!st)return;
+  var z=b.getAttribute('data-z');
+  if(z!==null){
+    if(z==='m'){v.meas=null;renderPhoto(st);return;}
+    if(z==='0'){v.scale=1;v.ox=0;v.oy=0;}else zoomAt(st,z==='1'?1.6:1/1.6,cvd.width/2,cvd.height/2);
+    draw();return;
+  }
+  if(b.id==='dggo'){
+    var n=parseInt($('dgidx').value,10);
+    if(!(n>=0)||!st.mesh||!st.mesh[n]){note(st.mesh?'Нет точки с таким номером (0–'+(st.mesh.length-1)+')':'Сетка недоступна: точки заданы вручную');return;}
+    v.sel=n;v.scale=6;var kk=k(st);v.ox=cvd.width/2-st.mesh[n].x*kk;v.oy=cvd.height/2-st.mesh[n].y*kk;clampPan(st);draw();info();return;
+  }
+  var sm=b.getAttribute('data-show');if(sm){v.meas=sm;v.tab='photo';v.scale=1;render();return;}
+  var cp=b.getAttribute('data-copy');if(cp){copyReport();}
+});
+/* ---------- Таблицы ---------- */
+function tPoints(st){
+  var h='<p class="hint2">σ: допущенный разброс положения точки в % межзрачкового расстояния (IPD). Δ зеркала: реальное расхождение двух проходов FaceMesh, если проверка выполнена. Эффективная σ = большее из двух.</p><div class="dgsc"><table class="dgt"><tr><th>id</th><th>источник</th><th>x</th><th>y</th><th>норм.</th><th>σ%</th><th>Δ зерк.%</th></tr>';
+  st.ids.forEach(function(id,i){var p=st.pts[i],a=st.noise[id]*100,fl=st.stab?st.stab.per[id]*100:null;
+    h+='<tr data-k="'+i+'"><td><b>'+id+'</b><br><small>'+esc(st.names[id])+'</small></td><td>'+esc(st.src[id])+'</td><td>'+f1(p.x,1)+'</td><td>'+f1(p.y,1)+'</td><td>'+f1(p.x/st.W,3)+'<br>'+f1(p.y/st.H,3)+'</td><td>'+f1(a,1)+'</td><td>'+(fl==null?'—':f1(fl,1))+'</td></tr>';});
+  return h+'</table></div>'+(st.stab?'<p class="hint2">Среднее расхождение (RMS): '+f1(st.stab.rms*100,2)+'% IPD, максимум '+f1(st.stab.max*100,2)+'% (точка '+st.stab.worst+').</p>':'<p class="hint2">Проверка на зеркальной копии не выполнялась (точки заданы вручную или проход не удался).</p>');
+}
+function tMeas(st){
+  var R=st.R;if(!R)return '<p class="hint2">Нет результата.</p>';
+  var G=R.geo.G,ipd=G.ipd,sens=st.sens(),h='<p class="hint2">Числа в скобках: пиксели / доля IPD ('+f1(ipd,1)+' px). Источники погрешности: вклад каждой точки в разброс замера при её допущенной σ.</p>';
+  R.items.forEach(function(it){
+    var id=it.spec.id,M=st.MEAS[id],u=st.UQ&&st.UQ.m[id],s=sens&&sens[id];
+    var parts=M.parts.map(function(n){var x=G[n];if(x==null)return '';var ang=/^(tl|tr)$/.test(n),pc=/^p\d$/.test(n)||/^(h|m|vv)$/.test(n);return n+' = '+(ang?f1(x,2)+'°':(pc?f1(x,3):f1(x,1)+' px ('+f1(x/ipd,3)+')'));}).filter(Boolean).join('; ');
+    h+='<div class="dgm"><div class="dgmh"><b>'+esc(it.spec.name)+'</b><span>'+esc(it.d)+'</span></div>'
+     +'<div class="dgf">'+esc(M.f)+'</div><div class="dgf">'+esc(parts)+'</div>'
+     +'<div class="dgf">сырое: <b>'+it.v.toPrecision(6)+'</b> · норма '+it.spec.idealText+' · оценка '+f1(it.score,1)+'/100 · вес '+it.spec.w+'</div>'
+     +(u?'<div class="dgf">σ (Монте-Карло): <b>'+fmtSd(id,u.sd)+'</b> · 90% интервал '+f1(u.p05,3)+'…'+f1(u.p95,3)+' · разброс оценки ±'+f1(u.ssd,1)+' · надёжность: <b>'+({high:'высокая',mid:'средняя',low:'низкая'}[u.rel])+'</b></div>':'')
+     +(s?'<div class="dgf">главные источники: '+s.list.slice(0,3).map(function(x){return x.id+' '+Math.round(x.share*100)+'% (1% IPD = '+f1(x.per1,3)+')';}).join(', ')+'</div>':'')
+     +'<div class="dgf">точки: '+M.pts.join(', ')+'</div><button class="btn sm" data-show="'+id+'" type="button">Показать на фото</button></div>';
+  });
+  return h;
+}
+function tQa(st){
+  var q=st.QA;if(!q)return '<p class="hint2">Нет данных.</p>';
+  var h='<div class="dgm"><div class="dgmh"><b>Достоверность</b><span>'+({high:'высокая',mid:'средняя',low:'низкая'}[q.conf])+'</span></div><div class="dgf">уровень контроля: '+q.level+'</div></div>';
+  h+='<div class="dgm"><b>Проверки</b>'+(q.items.length?q.items.map(function(i){return '<div class="dgf"><b class="'+(i.lvl==='bad'?'err':'')+'">'+i.lvl+'</b> '+i.code+(i.val!=null?' = '+f1(+i.val,3):'')+': '+esc(i.text)+'</div>';}).join(''):'<div class="dgf">Замечаний нет.</div>')+'</div>';
+  var p=q.pose||{},m=q.metrics||{};
+  h+='<div class="dgm"><b>Поза и метрики</b><div class="dgf">roll '+f1(p.roll)+'° · yaw '+f1(p.yaw)+'° (по носу '+f1(p.yawN)+'°, по z '+f1(p.yawZ)+'°) · pitch '+f1(p.pitch)+'° · dx '+f1(p.dx,3)+'</div>'
+   +'<div class="dgf">IPD '+f1(m.ipdPx,1)+' px · EAR '+f1(m.ear,3)+' · рот '+f1(m.mouthOpen,3)+' · взгляд '+f1(m.gazeL,2)+' / '+f1(m.gazeR,2)+' · лицо в кадре '+f1(m.faceW*100,0)+'%×'+f1(m.faceH*100,0)+'%</div>'
+   +(m.luma?'<div class="dgf">яркость '+f1(m.luma.mean,0)+' · контраст '+f1(m.luma.std,0)+' · резкость '+f1(m.luma.lap,0)+' · перекос света '+f1(m.luma.lr,2)+'</div>':'<div class="dgf">яркость и резкость не измерены</div>')+'</div>';
+  var u=st.UQ;
+  if(u)h+='<div class="dgm"><b>Устойчивость тира ('+u.n+' прогонов)</b><div class="dgf">балл: p10 '+f1(u.o.p10)+' · медиана '+f1(u.o.p50)+' · p90 '+f1(u.o.p90)+' · sd '+f1(u.o.sd)+'</div><div class="dgf">'+st.TIERS.map(function(t){return t[1]+' '+Math.round(u.tiers[t[1]]*100)+'%';}).join(' · ')+'</div></div>';
+  return h;
+}
+function tData(st){
+  var a=st.ai,h='<div class="dgm"><b>Что уходит в Worker</b><pre class="dgpre">'+esc(JSON.stringify(st.payload(),function(k,x){return k==='initData'?(x?'<скрыто>':''):x;},1))+'</pre></div>';
+  h+='<div class="dgm"><b>Последний обмен с ИИ</b><pre class="dgpre">'+esc(a?JSON.stringify(a,null,1):'ещё не запускался')+'</pre></div>';
+  return h+'<button class="btn gold wide" data-copy="1" type="button">Скопировать полный отчёт (JSON)</button>';
+}
+function report(st){
+  var r={app:'FaceMeter diag',time:new Date().toISOString(),image:{W:st.W,H:st.H},ua:navigator.userAgent};
+  r.points=st.ids.map(function(id,i){return {id:id,src:st.src[id],x:+st.pts[i].x.toFixed(2),y:+st.pts[i].y.toFixed(2),sigmaPrior:st.noise[id],flipDelta:st.stab?+st.stab.per[id].toFixed(4):null};});
+  if(st.R)r.measures=st.R.items.map(function(it){var u=st.UQ&&st.UQ.m[it.spec.id];return {id:it.spec.id,raw:it.v,shown:it.d,score:+it.score.toFixed(2),sd:u?+u.sd.toFixed(4):null,reliability:u?u.rel:null};});
+  if(st.R)r.result={overall:st.R.overall,tier:st.R.tier,geo:st.R.geo.G};
+  r.qa=st.QA?{level:st.QA.level,conf:st.QA.conf,items:st.QA.items,pose:st.QA.pose,metrics:Object.assign({},st.QA.metrics,{luma:st.QA.metrics.luma||null})}:null;
+  r.uncertainty=st.UQ?{n:st.UQ.n,o:st.UQ.o,tiers:st.UQ.tiers,mode:st.UQ.mode,pMode:st.UQ.pMode,lo:st.UQ.lo,hi:st.UQ.hi,m:st.UQ.m}:null;
+  r.stability=st.stab;r.payload=st.payload();if(r.payload)delete r.payload.initData;r.ai=st.ai?JSON.parse(JSON.stringify(st.ai)):null;if(r.ai&&r.ai.payload)delete r.ai.payload.initData;
+  r.mesh=st.mesh?st.mesh.map(function(p){return [+p.x.toFixed(2),+p.y.toFixed(2),+(p.z||0).toFixed(2)];}):null;
+  return r;
+}
+function copyReport(){
+  var st=S();if(!st)return;var t=JSON.stringify(report(st));
+  var fb=function(){var ta=d.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;left:0;top:0;width:100%;height:120px;z-index:99';d.body.appendChild(ta);ta.focus();ta.select();try{d.execCommand('copy');note('Отчёт скопирован');}catch(_){note('Выделите и скопируйте текст вручную');return;}setTimeout(function(){ta.remove();},400);};
+  try{navigator.clipboard.writeText(t).then(function(){note('Отчёт скопирован');},fb);}catch(_){fb();}
+}
+body.addEventListener('click',function(e){var tr=e.target.closest('tr[data-k]');if(tr){v.selKey=+tr.getAttribute('data-k');v.meas=null;v.tab='photo';render();}});
+window.addEventListener('resize',function(){if(!ov.hidden&&v.tab==='photo')render();});
 })();
 </script>
 </body></html>

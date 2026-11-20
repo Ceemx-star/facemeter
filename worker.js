@@ -20,6 +20,7 @@ const SCORE_V = 3;
 const hits = new Map();
 const chatHits = new Map();
 const seen = new Map();
+function pruneSeen() { if (seen.size > 5000) seen.clear(); }
 
 /* ---------- Статистика пользователей ----------
    Хранилище: тот же KV (binding LB). Один ключ на пользователя: "u:<telegram_id>",
@@ -125,6 +126,7 @@ async function visit(req, env, ctx) {
   const now = Date.now();
   if (now - (seen.get(u.id) || 0) < 86400000) return json({ ok: true });
   seen.set(u.id, now);
+  pruneSeen();
   await notifyOwner(env, "Открыл приложение: " + who(u));
   return json({ ok: true });
 }
@@ -166,55 +168,101 @@ async function checkInitData(initData, botToken) {
   return u && u.id ? u.id : null;
 }
 
+/* Только настоящие числа. Раньше Number(null), Number("") и Number(false) давали 0, и пропущенное значение проходило как ноль. */
 function num(v, lo, hi) {
-  v = Number(v);
-  return Number.isFinite(v) && v >= lo && v <= hi ? v : null;
+  return typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi ? v : null;
 }
+
+/* Допустимые границы сырых замеров. Те же числа, что HARD в приложении: значение за границей почти всегда значит, что точка сбита. */
+const RANGES = {
+  sym: [0, 100], thirds: [0, 33.4], lower: [0.6, 6], canthal: [-25, 35], fwhr: [1, 3.2], jaw: [0.45, 1.15],
+  wh: [0.6, 1.9], mid: [0.5, 2], eyes: [0.55, 1.8], nose: [0.55, 2], mouth: [0.9, 2.8], lips: [0.4, 4.5],
+};
+const TIER_MIN = [0, 3, 20, 45, 75, 92, 98, 99.8];
+const tierOfScore = (s) => { let t = TIERS[0]; TIER_MIN.forEach((m, i) => { if (s >= m) t = TIERS[i]; }); return t; };
+/* Коды замечаний от приложения: в промпт попадает только наш текст, а не строки, присланные клиентом. */
+const QA_TEXT = {
+  yaw_warn: "голова слегка повёрнута", pitch_warn: "голова немного наклонена вверх или вниз", roll: "сильный наклон головы в плоскости кадра",
+  small: "лицо небольшое в кадре", hair_edge: "лоб у самого края кадра", gaze: "взгляд направлен в сторону", mouth_slight: "рот приоткрыт",
+  close: "возможна перспективная дисторсия от близкой съёмки", no_mesh: "точки заданы вручную: поза, глаза и рот не проверялись",
+  dark: "снимок тёмный", bright: "снимок пересвечен", flat: "мало контраста", blur: "снимок размыт", side_light: "свет падает сбоку",
+  weak_stab: "положение точек нестабильно между двумя проходами детектора",
+};
+const QA_BAD = new Set(["points", "order", "tiny", "cropped", "implausible", "mesh_invalid", "yaw_bad", "pitch_bad", "eyes_closed", "mouth_open", "unstable"]);
+const CONF = { low: "low", medium: "medium", high: "high" };
 
 async function evaluate(req, env, ctx) {
   if (!env.GEMINI_API_KEY) return json({ error: "no_key" }, 503);
   let b;
   try { b = await req.json(); } catch (e) { return json({ error: "bad_json" }, 400); }
+  if (!b || typeof b !== "object") return json({ error: "bad_json" }, 400);
   const uid = await checkInitData(b.initData, env.BOT_TOKEN);
   if (!uid) return json({ error: "unauthorized" }, 401);
   bg(ctx, statsRecord(env, uid, false));
+  if (b.v !== SCORE_V) return json({ error: "outdated" }, 400);
   const now = Date.now(), h = (hits.get(uid) || []).filter((t) => now - t < 3600000);
   if (h.length >= 20) return json({ error: "rate_limited" }, 429);
   h.push(now); hits.set(uid, h);
-  const raw = b.raw || {}, lines = [];
+  if (hits.size > 5000) hits.clear();
+
+  /* Контроль качества от приложения. Если снимок признан непригодным, оценку не делаем. */
+  const qa = b.qa && typeof b.qa === "object" ? b.qa : {};
+  const codes = Array.isArray(qa.codes) ? qa.codes.filter((c) => typeof c === "string").slice(0, 20) : [];
+  if (qa.level === "bad" || codes.some((c) => QA_BAD.has(c))) return json({ error: "photo_unsuitable" }, 422);
+  const qaLines = codes.filter((c) => QA_TEXT[c]).map((c) => QA_TEXT[c]);
+
+  /* Замеры: только настоящие числа в правдоподобных границах. Пропуск или null не превращается в 0. */
+  const raw = b.raw && typeof b.raw === "object" ? b.raw : {};
+  const sdIn = b.sd && typeof b.sd === "object" ? b.sd : {};
+  const relIn = b.rel && typeof b.rel === "object" ? b.rel : {};
+  const lines = [];
   for (const [id, name, norm] of NORMS) {
-    const v = num(raw[id], -200, 1000);
-    if (v === null) return json({ error: "bad_data" }, 400);
-    lines.push(name + ": " + v.toFixed(2) + " (норма " + norm + ")");
+    const [lo, hi] = RANGES[id];
+    const v = num(raw[id], lo, hi);
+    if (v === null) return json({ error: "bad_data", field: id }, 400);
+    const sd = num(sdIn[id], 0, hi - lo);
+    let line = name + ": " + v.toFixed(2) + " (норма " + norm + ")";
+    if (sd !== null) line += ", погрешность ±" + sd.toFixed(2);
+    if (relIn[id] === "low") line += " [ненадёжно: погрешность сравнима с допуском]";
+    lines.push(line);
   }
-  const ms = num(b.meshSym, 0, 100), go = num(b.gridOverall, 0, 100);
-  const gt = TIERS.includes(b.gridTier) ? b.gridTier : "неизвестно";
-  const img = typeof b.image === "string" && b.image.length > 100 && b.image.length < 2500000 && /^[A-Za-z0-9+/=]+$/.test(b.image) ? b.image : null;
+  const ms = num(b.meshSym, 0, 100);
+  const go = num(b.gridOverall, 0, 100);
+  const gt = TIERS.includes(b.gridTier) ? b.gridTier : null;
+  const img = typeof b.image === "string" && b.image.length > 100 && b.image.length < 2500000 &&
+    b.image.startsWith("/9j/") && /^[A-Za-z0-9+/=]+$/.test(b.image) ? b.image : null;
+
+  /* Расчёт по сетке модели НЕ попадает в промпт: ИИ оценивает независимо, иначе он якорится на чужом результате.
+     Сравнение с расчётом делается ниже, в коде, и показывается пользователю как есть. */
   const prompt =
-    "Ты независимый эксперт по оценке лица по шкале looksmax-форумов (шкала не научная, условная).\n" +
+    "Ты независимый эксперт по оценке лица по шкале looksmax-форумов. Шкала условная и НЕ научная, оценка субъективная.\n" +
     (img
-      ? "Тебе дано фото лица анфас. Программа уже поставила на нём сетку из 468 точек и посчитала замеры (они ниже). Замеры могут быть неточными из-за ракурса, света или ошибки расстановки точек: если фото и числа расходятся, доверяй тому, что видишь на фото.\n" +
-        "Сначала посмотри на фото сам: форма лица и челюсти, скулы, глаза и кантальный наклон, нос, губы, кожа, волосы, общая гармония. Потом сверь с замерами. " +
-        "Если нужно, найди в интернете актуальные критерии тиров (Sub-5, LTN, MTN, HTN, Chadlite, Chad) и опирайся на них.\n"
-      : "Ты видишь только числа, лица не видишь.\n") +
+      ? "Тебе дано фото лица без разметки. Программа посчитала замеры по точкам FaceMesh (ниже). Они могут быть неточными из-за ракурса, света или ошибки точек: если фото и числа расходятся, скажи об этом прямо и доверяй фото. Не определяй личность, возраст, национальность и состояние здоровья.\n" +
+        "Сначала посмотри на фото сам: форма лица и челюсти, скулы, глаза, нос, губы, общая гармония. Потом сверь с замерами. Если нужно, можно уточнить критерии тиров в интернете, но шкала и доли тиров ниже имеют приоритет.\n"
+      : "Фото тебе НЕ передано. Ты видишь только числа замеров. Не описывай внешность, кожу, волосы и то, что якобы видно на фото: ты этого не видел. Пиши только про замеры.\n") +
     "Замеры:\n" + lines.join("\n") +
-    (ms !== null ? "\nСимметрия по сетке из 468 точек: " + ms.toFixed(1) + "%" : "") +
-    "\nПравила-сетка дали " + (go !== null ? go.toFixed(1) + " из 100" : "?") + ", тир " + gt + ".\n" +
+    (ms !== null ? "\nСимметрия по 24 парам точек сетки (отдельный показатель): " + ms.toFixed(1) + "%" : "") +
+    (qaLines.length ? "\nОграничения снимка: " + qaLines.join("; ") + "." : "") +
+    "\nЗамеры с пометкой «ненадёжно» и замеры при ограничениях снимка не используй как основание для категоричных выводов.\n" +
     "Тиры от низшего к высшему: " + TIERS.join(", ") + ".\n" +
-    "Шкала относительная: оценка сетки это процентиль среди обычных людей, 50 из 100 значит обычное лицо. Доли людей по тирам: Sub-3 около 3%, Sub-5 около 17%, LTN около 25%, MTN около 30%, HTN около 17%, Chadlite около 6%, Chad около 2%, Gigachad около 0.2%. Обычный человек это MTN или LTN, а не HTN. " +
-    "Не льсти и не завышай: для HTN и выше нужны явные сильные стороны, Chad и Gigachad ставь крайне редко. Оцени, какому тиру соответствует это лицо в целом, а не только числа, но не уходи от тира сетки больше чем на один тир в любую сторону. Если измерения выглядят нереалистично, скажи об этом. " +
-    "Затем дай 3-4 коротких конкретных совета именно для этого лица: уход за кожей, сон, питание в общих чертах, стрижка или борода, как переснять фото. Без экстремальных диет, калорий и цифр веса, без операций, лекарств и «костной ломки», без оскорблений; если нужна медицина, пиши «к врачу». " +
-    'Верни только JSON: {"tier":"один из списка","why":"3-5 предложений по-русски: что на фото и какие замеры решили оценку","advice":["совет","совет"]}.';
+    "Шкала относительная: тир показывает место среди обычных людей. Доли людей по тирам: Sub-3 около 3%, Sub-5 около 17%, LTN около 25%, MTN около 30%, HTN около 17%, Chadlite около 6%, Chad около 2%, Gigachad около 0.2%. Обычный человек это MTN или LTN, а не HTN. " +
+    "Не льсти и не завышай: для HTN и выше нужны явные сильные стороны, Chad и Gigachad ставь крайне редко. " +
+    "Оцени, какому тиру соответствует это лицо, исходя только из того, что тебе дано. Если ограничений много, а данных мало, снижай уверенность. " +
+    "Затем дай 3-4 коротких конкретных совета: уход за кожей, сон, питание в общих чертах, стрижка или борода, как переснять фото. Без экстремальных диет, калорий и цифр веса, без операций, лекарств и «костной ломки», без оскорблений; если нужна медицина, пиши «к врачу». " +
+    'Верни только JSON: {"tier":"один из списка","confidence":"low|medium|high","why":"3-5 предложений по-русски: ' +
+    (img ? "что видно на фото и какие замеры решили оценку" : "какие замеры в норме, какие нет и что из этого следует, без описания фото") +
+    '","concerns":["до 3 коротких сомнений: что в данных или на фото вызывает недоверие"],"advice":["совет","совет"]}.';
   const parts = [{ text: prompt }];
   if (img) parts.push({ inline_data: { mime_type: "image/jpeg", data: img } });
-  const mk = (tools) => JSON.stringify(Object.assign(
-    { contents: [{ role: "user", parts }], generationConfig: { maxOutputTokens: 3000 } },
+  /* Для моделей до Gemini 3 снижаем температуру, чтобы повторные запросы давали близкие ответы. */
+  const mk = (tools, m) => JSON.stringify(Object.assign(
+    { contents: [{ role: "user", parts }], generationConfig: Object.assign({ maxOutputTokens: 3000 }, /^gemini-3/.test(m) ? {} : { temperature: 0.2 }) },
     tools ? { tools: [{ google_search: {} }] } : {}
   ));
   const list = (env.GEMINI_MODEL ? [env.GEMINI_MODEL] : []).concat(MODELS);
   const call = (m, tools) => fetch(
     "https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent",
-    { method: "POST", headers: { "x-goog-api-key": env.GEMINI_API_KEY, "content-type": "application/json" }, body: mk(tools) }
+    { method: "POST", headers: { "x-goog-api-key": env.GEMINI_API_KEY, "content-type": "application/json" }, body: mk(tools, m) }
   );
   let r = null;
   for (const m of list) {
@@ -233,13 +281,17 @@ async function evaluate(req, env, ctx) {
   try { o = JSON.parse(text.slice(a, z + 1)); } catch (e) { return json({ error: "bad_answer" }, 502); }
   if (!o || !TIERS.includes(o.tier) || typeof o.why !== "string") return json({ error: "bad_answer" }, 502);
   const advice = Array.isArray(o.advice) ? o.advice.filter((x) => typeof x === "string").slice(0, 4).map((x) => x.slice(0, 300)) : [];
-  let tier = o.tier, why = o.why;
-  const gi = TIERS.indexOf(b.gridTier), ai = TIERS.indexOf(tier);
-  if (gi >= 0 && Math.abs(ai - gi) > 1) {
-    tier = TIERS[gi + (ai > gi ? 1 : -1)];
-    why = why.slice(0, 1300) + " (Тир скорректирован: оценка не может сильно расходиться с расчётом по замерам.)";
-  }
-  return json({ tier, why: why.slice(0, 1500), advice });
+  const concerns = Array.isArray(o.concerns) ? o.concerns.filter((x) => typeof x === "string").slice(0, 3).map((x) => x.slice(0, 200)) : [];
+  const confidence = CONF[o.confidence] || null;
+  /* Тир ИИ возвращается как есть. Расхождение с расчётом не скрывается и не «исправляется», а сообщается. */
+  const gi = gt ? TIERS.indexOf(gt) : -1, ai = TIERS.indexOf(o.tier);
+  const gap = gi >= 0 ? ai - gi : null;
+  /* Без фото ИИ не должен ссылаться на то, что «видно»: если сослался, помечаем ответ. */
+  const claimsPhoto = !img && /на (этом |данном )?(фото|снимке|изображении)|я вижу|по фото|видно,? что|виден|видна|видны/i.test(o.why);
+  return json({
+    tier: o.tier, why: o.why.slice(0, 1500), advice, concerns, confidence,
+    basis: img ? "photo+numbers" : "numbers", gridTier: gt, gridOverall: go, gap, diverged: gap !== null && Math.abs(gap) > 1, claimsPhoto,
+  });
 }
 
 async function chat(req, env, ctx) {
@@ -252,6 +304,7 @@ async function chat(req, env, ctx) {
   const now = Date.now(), h = (chatHits.get(uid) || []).filter((t) => now - t < 3600000);
   if (h.length >= 60) return json({ error: "rate_limited" }, 429);
   h.push(now); chatHits.set(uid, h);
+  if (chatHits.size > 5000) chatHits.clear();
   const prompt = typeof b.prompt === "string" ? b.prompt.slice(0, 6000) : "";
   if (prompt.length < 2) return json({ error: "bad_data" }, 400);
   const body = JSON.stringify({
@@ -296,6 +349,7 @@ async function lb(req, env, ctx) {
     const sc = num(b.score, 0, 100);
     if (sc === null || !TIERS.includes(b.tier)) return json({ error: "bad_data" }, 400);
     if (b.v !== SCORE_V) return json({ error: "outdated" }, 400);
+    if (b.tier !== tierOfScore(sc) && b.tier !== tierOfScore(sc - 0.05)) return json({ error: "bad_data", field: "tier" }, 400);
     const n = ((u.first_name || u.username || "user") + "").slice(0, 20);
     if (i >= 0) { if (sc > list[i].s) list[i] = { id: u.id, n, s: sc, t: b.tier, v: SCORE_V }; else list[i].n = n; }
     else list.push({ id: u.id, n, s: sc, t: b.tier, v: SCORE_V });
