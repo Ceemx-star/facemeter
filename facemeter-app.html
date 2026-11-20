@@ -2214,7 +2214,7 @@ function camStop(){try{if(camStream)camStream.getTracks().forEach(function(t){t.
 function camClose(){camStop();$('camov').hidden=true;}
 async function camStart(){
   camStop();
-  camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:camFacing},width:{ideal:1920},height:{ideal:1440}},audio:false});
+  camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:camFacing},width:{ideal:1280},height:{ideal:960}},audio:false});
   var v=$('camVideo');v.srcObject=camStream;v.style.transform=camFacing==='user'&&camMirror?'scaleX(-1)':'none';
   try{await v.play();}catch(_){}
 }
@@ -2236,12 +2236,15 @@ $('camFlip').addEventListener('click',async function(){camFacing=camFacing==='us
 $('camShot').addEventListener('click',function(){
   var v=$('camVideo');if(!v.videoWidth)return;
   hap('ok');
-  var c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;var g=c.getContext('2d');if(camFacing==='user'&&camMirror){g.translate(c.width,0);g.scale(-1,1);}g.drawImage(v,0,0);
+  /* кадр сразу берём в размере до 1000 px (дальше приложение всё равно уменьшает до 1000) и закрываем камеру без ожидания */
+  var k=Math.min(1,1000/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement('canvas');
+  c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);
+  var g=c.getContext('2d');if(camFacing==='user'&&camMirror){g.translate(c.width,0);g.scale(-1,1);}g.drawImage(v,0,0,c.width,c.height);
+  camClose();
   c.toBlob(function(b){
-    camClose();
     if(!b){msg('Не удалось сделать снимок. Попробуйте ещё раз.');return;}
     deliver(new File([b],'camera.jpg',{type:'image/jpeg'}));
-  },'image/jpeg',0.92);
+  },'image/jpeg',0.9);
 });
 $('camMir').textContent='Зеркало: '+(camMirror?'вкл':'выкл');
 $('camMir').addEventListener('click',function(){camMirror=!camMirror;try{localStorage.setItem('fm2:'+window.FMU+'mirror',camMirror?'1':'0')}catch(e){}$('camVideo').style.transform=camFacing==='user'&&camMirror?'scaleX(-1)':'none';$('camMir').textContent='Зеркало: '+(camMirror?'вкл':'выкл');});
