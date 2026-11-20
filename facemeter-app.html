@@ -88,7 +88,7 @@ h3{font:700 15px var(--font-body)}
 .nav{flex:none;display:flex;gap:10px;padding:12px 18px calc(14px + env(safe-area-inset-bottom,0px));position:relative;z-index:3;background:linear-gradient(0deg,var(--bg) 62%,transparent)}
 .nav .btn{height:56px;font-size:16px}
 #bBack{flex:0 0 auto;min-width:104px;transition:transform .4s var(--ease),opacity .3s}
-#bBack.off{opacity:0;pointer-events:none;transform:translate3d(-12px,0,0)}
+#bBack.off{display:none}
 #bNext{flex:1}
 #bNext.pulse:not(:disabled){animation:pulse 1.8s ease-in-out infinite}
 @keyframes pulse{0%,100%{box-shadow:0 8px 28px rgba(255,255,255,.28)}50%{box-shadow:0 8px 38px rgba(255,255,255,.65)}}
@@ -539,6 +539,11 @@ html.tt,html.tt *,html.tt *::before,html.tt *::after{transition:background-color
 /* индикатор прокрутки сверху: тонкая линия при скролле */
 .top{transition:box-shadow .3s}
 .top.scrolled{box-shadow:0 1px 0 var(--line)}
+/* Кнопка «Далее»: маленькая, плавает над таб-баром, без полосы */
+.nav{position:absolute!important;left:auto!important;right:16px;bottom:calc(86px + env(safe-area-inset-bottom,0px));padding:0!important;background:none!important;width:auto;gap:8px;z-index:5;pointer-events:none}
+.nav .btn{pointer-events:auto;height:44px!important;min-width:0!important;padding:0 22px!important;font-size:14px!important;flex:none!important}
+#bNext{flex:none!important}
+.page{padding-bottom:72px}
 @media(prefers-reduced-motion:reduce){.bg::before{animation:none}}
 /* запрет выделения и копирования: разрешено только в полях ввода и в ответах ассистента */
 *,*::before,*::after{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -1265,6 +1270,7 @@ function go(i,instant){
 function syncNav(){
   var nb=$('bNext'),bb=$('bBack'),lab='Далее',dis=false,pulse=false;
   bb.classList.toggle('off',page===0);
+  nb.parentNode.hidden=(page===0&&mode==='demo');
   if(page===0){dis=mode==='demo';}
   else if(page===1){lab='Смотреть результат';dis=!(mode==='adjust'&&resultsOk)||aiBusy||meshBusy;pulse=!dis;}
   else if(page===PAGES-1){lab='Новое фото';}
