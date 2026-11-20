@@ -576,10 +576,6 @@ html,body{background:var(--bg)!important}
 :root[data-mode]:not([data-fm=mono]) .meter{background:linear-gradient(90deg,var(--panel2),var(--accent))!important}
 :root[data-mode]:not([data-fm=mono]) .meter i{box-shadow:none!important;border-color:var(--bg)!important}
 /* убраны лишние эффекты */
-.ticker{display:none!important}
-.btn::after,.xpb i::after,.eyebrow::before{display:none!important}
-.av,#bNext.pulse{animation:none!important}
-.ch path{stroke-dashoffset:0!important;animation:none!important}
 .toast,.fmt{background:var(--panel2)!important;color:var(--ink)!important;border:1px solid var(--line)!important}
 .prompt svg path{stroke:var(--muted)}
 .radar circle[fill="none"]{stroke:var(--line)}
@@ -598,8 +594,8 @@ html,body{background:var(--bg)!important}
 /* ===== Цветовые темы (акцент) ===== */
 :root[data-mode=dark][data-fm]{--good:#8FCB9B;--warn:#E0B65A;--bad:#F0747F;--line:rgba(237,234,228,.13)}
 :root[data-mode=light][data-fm]{--good:#2F7A4A;--warn:#9A6A12;--bad:#C23B52;--line:rgba(31,27,20,.14)}
-:root[data-mode=dark][data-fm=gold]{--accent:#7C9CF0;--accent-ink:#0A1020;--hot:#7C9CF0;--g1:#7C9CF0;--g2:#7C9CF0;--g3:#7C9CF0}
-:root[data-mode=light][data-fm=gold]{--accent:#3F5FCC;--accent-ink:#fff;--hot:#3F5FCC;--g1:#3F5FCC;--g2:#3F5FCC;--g3:#3F5FCC}
+:root[data-mode=dark][data-fm=blue]{--accent:#7C9CF0;--accent-ink:#0A1020;--hot:#7C9CF0;--g1:#7C9CF0;--g2:#7C9CF0;--g3:#7C9CF0}
+:root[data-mode=light][data-fm=blue]{--accent:#3F5FCC;--accent-ink:#fff;--hot:#3F5FCC;--g1:#3F5FCC;--g2:#3F5FCC;--g3:#3F5FCC}
 :root[data-mode=dark][data-fm=teal]{--accent:#6FB7C9;--accent-ink:#0A1519;--hot:#6FB7C9;--g1:#6FB7C9;--g2:#6FB7C9;--g3:#6FB7C9}
 :root[data-mode=light][data-fm=teal]{--accent:#2B7A8E;--accent-ink:#fff;--hot:#2B7A8E;--g1:#2B7A8E;--g2:#2B7A8E;--g3:#2B7A8E}
 :root[data-mode=dark][data-fm=emerald]{--accent:#6FCB9F;--accent-ink:#08150F;--hot:#6FCB9F;--g1:#6FCB9F;--g2:#6FCB9F;--g3:#6FCB9F}
@@ -1335,10 +1331,8 @@ function go(i,instant){
   var ps=document.querySelectorAll('.page');
   for(var k=0;k<ps.length;k++){ps[k].classList.toggle('on',k===i);}
   if(changed&&ps[i])ps[i].scrollTop=0;
-  var sq=(!detail&&resultsOk)?[0,1,2,10]:null,sk=sq?sq.indexOf(i):-1;
-  $('crumb').textContent=NAMES[i];
-  if(sk>=0){$('count').textContent=(sk+1)+' / '+sq.length;$('pfill').style.transform='scaleX('+(sk/(sq.length-1))+')';}
-  else{$('count').textContent=(i+1)+' / '+PAGES;$('pfill').style.transform='scaleX('+(i/(PAGES-1))+')';}
+  $('crumb').textContent=NAMES[i];$('count').textContent=(i+1)+' / '+PAGES;
+  $('pfill').style.transform='scaleX('+(i/(PAGES-1))+')';
   if(changed){hap('sel');msg('');}
   if(i===2&&curR&&changed){var rg=$('p2').querySelector('.ring');if(rg)countUp(rg,curR.overall);}
   syncNav();
@@ -1352,13 +1346,7 @@ function syncNav(){
   else if(page===PAGES-1){lab='Новое фото';}
   nb.textContent=lab;nb.disabled=dis;nb.classList.toggle('pulse',pulse);
 }
-function stepTo(d){
-  if(!detail&&mode==='adjust'&&resultsOk){
-    var sq=[0,1,2,10],k=sq.indexOf(page);
-    if(k>=0){go(sq[Math.max(0,Math.min(sq.length-1,k+d))]);return;}
-  }
-  go(page+d);
-}
+function stepTo(d){go(page+d);}
 $('bNext').addEventListener('click',function(){
   if(page===PAGES-1){resetAll();return;}
   stepTo(1);
@@ -1593,8 +1581,6 @@ function renderResults(){
    +'<div class="tier"><b>'+(QI.length?'—':R.tier)+'</b><span>'+(QI.length?'фото не подходит для оценки':'≈ PSL '+R.psl.toFixed(1)+' · '+R.overall.toFixed(1)+' из 100 · перевод приблизительный')+'</span></div>'
    +'<div class="meter"><i style="left:'+Math.max(2,Math.min(98,R.overall))+'%"></i></div><div class="legend">'+legend+'</div>';
   h+=qaBoxHtml(QA)+confHtml(R,QA,UQ);
-  if(!QI.length&&weak.length)h+='<div class="card" style="width:100%;text-align:left"><h3>Что тянет балл вниз</h3>'+weak.map(function(i){return '<p>'+i.spec.name+': <b>'+i.d+'</b> · '+s10(i.score)+'/10</p>';}).join('')+'</div>';
-  if(!QI.length)h+='<button class="btn wide" data-act="detail" type="button">Подробный разбор</button>';
   h+='</div>';
   $('p2').innerHTML=h;
 
@@ -1652,7 +1638,7 @@ $('track').addEventListener('click',function(e){
   var b=e.target.closest&&e.target.closest('[data-act]');if(!b)return;
   var a=b.getAttribute('data-act');
   if(a==='dl')downloadPng();
-  else if(a==='detail'){detail=true;go(3);}
+  
   else if(a==='again')resetAll();
   else if(a==='vbtn'){if(curR)runVerdict(curR);}
   else if(a==='aiphoto'){try{localStorage.setItem(aiKey(),aiPhotoOn()?'0':'1');}catch(_){}verdict=null;paintAiOpt();paintVerdict();}
@@ -1972,7 +1958,7 @@ async function runAI(){
   }catch(e){
     var c=e&&e.code;
     if(c==='cancelled'){aiNote('Остановлено.');}
-    else{aiNote('');msg(AIERR[c]||'ИИ не ответил. Нажмите «Точки через ИИ» ещё раз или расставьте точки вручную.');}
+    else{aiNote('');msg((AIERR[c]||'ИИ не ответил. Нажмите ещё раз или расставьте точки вручную.')+' Технически: '+(c||(e&&e.name)||'ошибка')+(e&&e.message?' — '+e.message:'')+'.');}
   }finally{clearTimeout(hint);aiBusy=false;aiCtl=null;syncAi();}
 }
 $('aiBtn').addEventListener('click',runAI);
@@ -2026,7 +2012,7 @@ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;
 function fd(t){return new Date(t).toLocaleDateString('ru-RU')}
 function dk(t){var d=new Date(t);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
 var H=ld('hist',[]),EV=ld('ev',[]),CH=ld('chat',[]),HB=ld('hab',{}),
-PF=Object.assign({name:'Гость',av:'',theme:'gold',hide:false,wk:false,tp:false,skin:'normal',und:'neutral',shape:'',aes:'classic'},ld('pf',{}));if(!PF.themeSet&&PF.theme==='graphite')PF.theme='gold';
+PF=Object.assign({name:'Гость',av:'',theme:'mono',hide:false,wk:false,tp:false,skin:'normal',und:'neutral',shape:'',aes:'classic'},ld('pf',{}));if(!PF.themeSet&&PF.theme==='graphite')PF.theme='mono';if(PF.theme==='gold')PF.theme='mono';
 try{var mg=0;H.forEach(function(e){if(e&&e.r&&e.cv!==CAL.v){var q=rescore(e.r);if(q){e.o=+q.o.toFixed(1);e.tier=q.tier;e.cv=CAL.v;mg=1}}});if(mg)sv('hist',H)}catch(e){}
 var TU=null;try{TU=Telegram.WebApp.initDataUnsafe.user||null}catch(e){}
 function tgName(){return TU?((TU.first_name||'')+(TU.last_name?' '+TU.last_name:'')).trim()||TU.username||'':''}
@@ -2114,7 +2100,7 @@ function hue(c){var r=parseInt(c.substr(1,2),16)/255,g=parseInt(c.substr(3,2),16
 function R9(){var l=last(),best=H.length?Math.max.apply(0,H.map(function(e){return e.o})):0;
  $('s9').innerHTML='<div class="eyebrow">Профиль</div><div class="send"><div class="av" data-a="av" style="'+(AV()?'background-image:url('+AV()+')':'')+'">'+(AV()?'':esc(PF.name.charAt(0).toUpperCase()))+'</div><input class="fm-in" id="nm" value="'+esc(PF.name)+'" maxlength="24" style="flex:1"></div>'+(TU?'<p class="hint2">'+(TU.username?'@'+esc(TU.username)+' · ':'')+'аккаунт Telegram</p>':'')+'<input type="file" id="avf" accept="image/*" hidden>'+
  '<div class="kpis"><div class="kpi"><b>'+H.length+'</b><span>анализов</span></div><div class="kpi"><b>'+(l&&!PF.hide?l.tier:'—')+'</b><span>тир</span></div><div class="kpi"><b>'+(H.length?(best/10).toFixed(1):'—')+'</b><span>лучший</span></div></div>'+
- '<div class="sec"><h2>Оформление</h2><div class="seg">'+[['gold','Синий','#7C9CF0'],['teal','Бирюза','#6FB7C9'],['emerald','Изумруд','#6FCB9F'],['lavender','Лаванда','#A99BE0'],['rose','Розовый','#E58FB8'],['ruby','Рубин','#E8788A'],['coral','Коралл','#F0907A'],['orange','Оранжевый','#F0A25C'],['graphite','Графит','#D8D6D0'],['mono','Монохром','#FFFFFF']].map(function(t){return'<button data-a="th" data-v="'+t[0]+'" class="'+(PF.theme===t[0]?'on':'')+'"><i class="dot" style="background:'+t[2]+'"></i>'+t[1]+'</button>'}).join('')+'</div></div>'+
+ '<div class="sec"><h2>Оформление</h2><div class="seg">'+[['mono','Монохром','#FFFFFF'],['blue','Синий','#7C9CF0'],['teal','Бирюза','#6FB7C9'],['emerald','Изумруд','#6FCB9F'],['lavender','Лаванда','#A99BE0'],['rose','Розовый','#E58FB8'],['ruby','Рубин','#E8788A'],['coral','Коралл','#F0907A'],['orange','Оранжевый','#F0A25C'],['graphite','Графит','#D8D6D0']].map(function(t){return'<button data-a="th" data-v="'+t[0]+'" class="'+(PF.theme===t[0]?'on':'')+'"><i class="dot" style="background:'+t[2]+'"></i>'+t[1]+'</button>'}).join('')+'</div></div>'+
  '<div class="sec"><h2>Приватность и уведомления</h2>'+[['hide','Скрывать тир на карточке',PF.hide],['wk','Недельное напоминание',PF.wk],['tp','Советы по уходу',PF.tp]].map(function(t){return'<div class="tg"><span>'+t[1]+'</span><button class="chip2" data-a="tgl" data-v="'+t[0]+'">'+(t[2]?'Вкл':'Выкл')+'</button></div>'}).join('')+'<p class="hint2">Данные хранятся только на этом устройстве. Пуш-уведомления отправляет Telegram-бот: здесь сохраняется только ваш выбор.</p></div>'+
  '<div class="toolbar"><button class="btn primary" data-a="share">Поделиться карточкой</button><button class="btn" data-a="wipe">Удалить мои данные</button></div>'}
 function card(){var c=document.createElement('canvas');c.width=600;c.height=340;var g=c.getContext('2d'),l=last(),gr=g.createLinearGradient(0,0,600,340);gr.addColorStop(0,'#1c1c1c');gr.addColorStop(1,'#000000');g.fillStyle=gr;g.fillRect(0,0,600,340);g.strokeStyle='#FFFFFF';g.lineWidth=3;g.strokeRect(10,10,580,320);g.fillStyle='#EDEDED';g.font='800 34px sans-serif';g.fillText(PF.name,40,80);g.fillStyle='#FFFFFF';g.font='800 80px sans-serif';g.fillText(l?(PF.hide?'—':l.tier):'—',40,190);g.font='500 24px sans-serif';g.fillStyle='#9A9A9A';g.fillText((l?(l.o/10).toFixed(1)+'/10 · ':'')+H.length+' анализов · FaceMeter',40,260);return c}
