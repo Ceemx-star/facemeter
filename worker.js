@@ -350,8 +350,10 @@ async function lb(req, env, ctx) {
   if (!u || !u.id) return json({ error: "unauthorized" }, 401);
   bg(ctx, statsRecord(env, u.id, false));
   const raw = await env.LB.get("top");
-  let list = raw ? JSON.parse(raw) : [];
-  list = list.filter((x) => x.v === SCORE_V);
+  let list = [];
+  try { list = raw ? JSON.parse(raw) : []; } catch (e) { list = []; }
+  if (!Array.isArray(list)) list = [];
+  list = list.filter((x) => x && x.v === SCORE_V);
   const i = list.findIndex((x) => x.id === u.id);
   if (b.action === "leave") {
     if (i >= 0) list.splice(i, 1);
@@ -437,7 +439,7 @@ export default {
         body: JSON.stringify({
           chat_id: m.chat.id,
           text: "Добро пожаловать 🔥\nЗагрузи фото анфас, и нейросеть поставит 468 точек на лицо, посчитает пропорции и определит твой тир: от Sub-3 до Gigachad. Ты получишь оценку, разбор по замерам и советы, что подтянуть.",
-          reply_markup: { inline_keyboard: [[{ text: "Открыть LuxMaxing", web_app: { url: env.WEBAPP_URL } }]] },
+          reply_markup: { inline_keyboard: [[{ text: "Открыть Фейсметр", web_app: { url: env.WEBAPP_URL } }]] },
         }),
       });
     }
