@@ -1381,7 +1381,7 @@ function aiLead(){
   if(!canVerdict())return 'Второй ИИ оценивает замеры независимо от расчёта.';
   if(sample)return 'Второй ИИ смотрит только на числа замеров и сам решает, какой это тир. Фото не передаётся.';
   return aiPhotoOn()
-    ?'ИИ получит сжатое фото лица (JPEG до 768 px, без разметки) и числа замеров с погрешностями. Ваш сервер фото не сохраняет, но оно обрабатывается сервисом Gemini.'
+    ?'ИИ получит сжатое фото лица (JPEG до 768 px, без разметки) и числа замеров с погрешностями. Ваш сервер фото не сохраняет, но для оценки оно передаётся ИИ-сервису.'
     :'ИИ получит только числа замеров и их погрешности, без фото: лица он не видит и точки проверить не может. Фото никуда не уходит.';
 }
 function paintAiOpt(){
@@ -1782,7 +1782,7 @@ async function runVerdict(R){
       rec.status=resp.status;rec.resp=d;
       if(resp.ok&&d.tier&&d.why)verdict={tier:d.tier,why:d.why,advice:Array.isArray(d.advice)?d.advice.slice(0,4):[],confidence:d.confidence||'',concerns:Array.isArray(d.concerns)?d.concerns.slice(0,3):[],basis:d.basis||'numbers',claimsPhoto:!!d.claimsPhoto};
       else{
-        var E={no_key:'Оценщик ИИ ещё не подключён: в Cloudflare не добавлен ключ GEMINI_API_KEY.',rate_limited:'Слишком много оценок за час, попробуйте позже.',unauthorized:'Не удалось подтвердить Telegram. Закройте и откройте Фейсметр заново.',photo_unsuitable:'Сервер счёл снимок непригодным для оценки. Переснимите фото.',outdated:'Версия приложения устарела. Закройте и откройте Фейсметр заново.',bad_data:'Сервер отклонил замеры как некорректные'+(d.field?' ('+d.field+')':'')+'. Проверьте точки.'};
+        var E={no_key:'Оценщик ИИ ещё не подключён: на сервере не настроен ключ ИИ.',rate_limited:'Слишком много оценок за час, попробуйте позже.',unauthorized:'Не удалось подтвердить Telegram. Закройте и откройте Фейсметр заново.',photo_unsuitable:'Сервер счёл снимок непригодным для оценки. Переснимите фото.',outdated:'Версия приложения устарела. Закройте и откройте Фейсметр заново.',bad_data:'Сервер отклонил замеры как некорректные'+(d.field?' ('+d.field+')':'')+'. Проверьте точки.'};
         msg(E[d.error]||('ИИ-оценщик не ответил'+(d.error?' ('+d.error+')':'')+'. Нажмите ещё раз.'));
       }
     }
@@ -2108,7 +2108,7 @@ update();go(0,true);
 <script>
 window.FMU=(function(){try{var u=Telegram.WebApp.initDataUnsafe.user;return u&&u.id?u.id+':':''}catch(e){return ''}})();
 (function(){
-var CFG={chatEndpoint:'https://facemeter.scallymonlight.workers.dev/chat'};/* воркер с Gemini: POST {prompt,initData} -> {text} */
+var CFG={chatEndpoint:'https://facemeter.scallymonlight.workers.dev/chat'};/* воркер: POST {prompt,initData} -> {text} */
 var K='fm2:'+window.FMU,$=function(i){return document.getElementById(i)};
 function ld(k,d){try{var v=localStorage.getItem(K+k);return v?JSON.parse(v):d}catch(e){return d}}
 function sv(k,v){try{localStorage.setItem(K+k,JSON.stringify(v))}catch(e){}}
@@ -2169,10 +2169,10 @@ function local(q){q=q.toLowerCase();var l=last(),s=shape();
  if(/результат|анализ|балл|тир|подробн/.test(q)){if(!l)return 'Сохранённых анализов нет. Загрузите фото на шаге 1.';var w=Object.keys(l.m).filter(function(k){return l.m[k]<8});return 'Последний: '+l.tier+', '+(l.o/10).toFixed(1)+'/10. '+(w.length?'Ниже нормы: '+w.map(nmOf).join(', ')+'. Часть показателей зависит от ракурса и света, переснимите перед выводами.':'Все показатели в норме.')}
  return 'Могу помочь с уходом за кожей, причёской, цветами и разбором ваших результатов. Выберите быстрый вопрос выше.'}
 async function ask(q){var pr='Ты ментор по уходу и стилю в приложении FaceMeter. Язык ответа: '+({ru:'русский',en:'English'}[(function(){try{return JSON.parse(localStorage.getItem('fm4:'+window.FMU+'lang'))||'ru'}catch(e){return 'ru'}})()])+'. Ответ до '+(/подробн/i.test(q)?'300':'120')+' слов, без диет, калорий, лекарств и операций; при медицине пиши «к врачу». '+ctx()+'. Кожа: '+PF.skin+'. Цветотип: '+PF.und+'.\nИстория: '+CH.slice(-6).map(function(m){return m.r+': '+m.t}).join(' | ')+'\nВопрос: '+q;
- try{if(CFG.chatEndpoint){var x=await fetch(CFG.chatEndpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt:pr,initData:(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData)||''})}),d=await x.json();var tx=d.text||d.reply||d.answer||d.response;if(tx)return[tx,'Gemini']}}catch(e){}
+ try{if(CFG.chatEndpoint){var x=await fetch(CFG.chatEndpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt:pr,initData:(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData)||''})}),d=await x.json();var tx=d.text||d.reply||d.answer||d.response;if(tx)return[tx,'ИИ']}}catch(e){}
  try{if(window.claude&&window.claude.use){var s=await window.claude.use('sample');if(s){var r=await s(pr,{modelTier:'default',cache:false});if(r&&r.text)return[r.text,'Claude']}}}catch(e){}
  return[local(q),'локальный режим: ИИ не подключён']}
-function paintM(n){var m=$('msgs');if(!m)return;m.innerHTML=CH.map(function(x,i){return'<div class="b '+x.r+(n&&i===CH.length-1?' new':'')+'">'+esc(x.t)+(x.s?'<small>'+esc(x.s)+'</small>':'')+'</div>'}).join('')+(busy?'<div class="b a"><span class="dotsT"><i></i><i></i><i></i></span></div>':'');m.scrollTop=1e5}
+function paintM(n){var m=$('msgs');if(!m)return;m.innerHTML=CH.map(function(x,i){return'<div class="b '+x.r+(n&&i===CH.length-1?' new':'')+'">'+esc(x.t)+(x.s?'<small>'+esc(String(x.s).replace(/g[e]mini/ig,'ИИ'))+'</small>':'')+'</div>'}).join('')+(busy?'<div class="b a"><span class="dotsT"><i></i><i></i><i></i></span></div>':'');m.scrollTop=1e5}
 async function send(t){t=(t||'').trim();if(!t||busy)return;busy=true;CH.push({r:'u',t:t});paintM();var a;try{a=await ask(t)}catch(e){a=['Не получилось ответить. Попробуйте ещё раз.','ошибка']}
  busy=false;CH.push({r:'a',t:a[0],s:a[1]});CH=CH.slice(-60);sv('chat',CH);addEv('chat',t.slice(0,40));paintM(1);R7()}
 function R6(){var l=last();$('s6').innerHTML='<div class="eyebrow">AI Mentor</div><h2>AI Beauty Assistant</h2><p class="hint2">'+(l?'Знаю последний результат: '+l.tier+', '+(l.o/10).toFixed(1)+'/10.':'Анализов пока нет: ответы будут общими.')+'</p><div class="chips">'+Q.map(function(q){return'<button class="chip2" data-a="q" data-v="'+esc(q)+'">'+q+'</button>'}).join('')+'</div><div class="msgs" id="msgs"></div><div class="send"><input id="mi" type="text" placeholder="Спросите про уход, стиль, результаты" autocomplete="off"><button class="btn primary" data-a="send">Отправить</button></div><button class="btn" data-a="clr">Очистить историю</button>';paintM()}
